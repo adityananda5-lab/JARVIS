@@ -21,8 +21,23 @@ function Core({ thinking }) {
             <stop offset="100%" stopColor="var(--ember)" stopOpacity="0" />
           </radialGradient>
         </defs>
-        <circle className="ring-outer" cx="50" cy="50" r="44" fill="none" stroke="var(--ember)" strokeWidth="1" strokeDasharray="1 8" opacity="0.5" />
-        <circle className="ring-inner" cx="50" cy="50" r="34" fill="none" stroke="var(--gold)" strokeWidth="1.2" strokeDasharray="3 5" opacity="0.7" />
+        <circle className="ring-outer" cx="50" cy="50" r="46" fill="none" stroke="var(--ember)" strokeWidth="0.6" strokeDasharray="0.5 3" opacity="0.45" />
+        <circle className="ring-mid" cx="50" cy="50" r="40" fill="none" stroke="var(--gold)" strokeWidth="0.8" strokeDasharray="6 3 1 3" opacity="0.5" />
+        <circle className="ring-inner" cx="50" cy="50" r="30" fill="none" stroke="var(--gold-bright)" strokeWidth="1" strokeDasharray="2 4" opacity="0.65" />
+        <g className="streaks">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <line
+              key={i}
+              x1="50"
+              y1="50"
+              x2={50 + 44 * Math.cos((i * Math.PI * 2) / 10)}
+              y2={50 + 44 * Math.sin((i * Math.PI * 2) / 10)}
+              stroke="var(--ember)"
+              strokeWidth="0.4"
+              opacity="0.25"
+            />
+          ))}
+        </g>
         <g className="core-glow">
           <circle cx="50" cy="50" r="20" fill="url(#coreGlow)" />
           <circle cx="50" cy="50" r="5" fill="#fff8ec" />
@@ -79,21 +94,37 @@ export default function Home() {
       const transcript = e.results[0][0].transcript;
       setInput(transcript);
     };
+    recognition.onerror = (e) => {
+      setListening(false);
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        alert("Microphone access was blocked. Check your browser's site settings and allow the microphone for this page.");
+      } else if (e.error === "no-speech") {
+        // silently ignore — user just didn't say anything
+      } else {
+        alert("Voice input hit an error: " + e.error);
+      }
+    };
     recognition.onend = () => setListening(false);
     recognitionRef.current = recognition;
   }, []);
 
   function toggleMic() {
     if (!recognitionRef.current) {
-      alert("Voice input isn't supported in this browser. Try Chrome on desktop or Android.");
+      alert(
+        "Voice input isn't supported in this browser. Safari (Mac and iPhone) doesn't support it yet — try Chrome or Edge instead."
+      );
       return;
     }
     if (listening) {
       recognitionRef.current.stop();
       setListening(false);
     } else {
-      recognitionRef.current.start();
-      setListening(true);
+      try {
+        recognitionRef.current.start();
+        setListening(true);
+      } catch (err) {
+        setListening(false);
+      }
     }
   }
 
@@ -102,17 +133,20 @@ export default function Home() {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
 
-    // Prefer a British English voice if the browser has one available
+    // Look for well-known British male voice names first (varies by browser/OS),
+    // then fall back to any British voice, then any English voice.
     const voices = window.speechSynthesis.getVoices();
+    const knownMaleNames = ["Daniel", "Google UK English Male", "Microsoft George", "Microsoft Ryan", "Arthur", "Oliver"];
     const britishVoice =
+      voices.find((v) => knownMaleNames.some((name) => v.name.includes(name))) ||
       voices.find((v) => v.lang === "en-GB" && /male/i.test(v.name)) ||
       voices.find((v) => v.lang === "en-GB") ||
-      voices.find((v) => v.lang.startsWith("en-GB"));
+      voices.find((v) => v.lang && v.lang.startsWith("en-GB"));
     if (britishVoice) utterance.voice = britishVoice;
 
     utterance.lang = "en-GB";
     utterance.rate = 0.95;
-    utterance.pitch = 0.85;
+    utterance.pitch = 0.8;
     utterance.volume = 1;
     window.speechSynthesis.speak(utterance);
   }
@@ -162,7 +196,6 @@ export default function Home() {
   return (
     <div className="app">
       <div className="header">
-        <Core thinking={loading} />
         <div className="title-block">
           <div className="wordmark">J.A.R.V.I.S.</div>
           <div className="status-line">
@@ -176,6 +209,10 @@ export default function Home() {
         >
           VOICE {voiceOn ? "ON" : "OFF"}
         </button>
+      </div>
+
+      <div className="core-stage">
+        <Core thinking={loading} />
       </div>
 
       <div className="log" ref={logRef}>
