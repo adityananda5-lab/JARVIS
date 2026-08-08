@@ -85,16 +85,32 @@ body {
 .header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 18px;
-  padding: 18px 24px 12px;
+  padding: 16px 24px 0;
+  flex-shrink: 0;
+}
+
+.core-stage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 0 10px;
   flex-shrink: 0;
 }
 
 .core {
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: 108px;
+  height: 108px;
   flex-shrink: 0;
+  transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.7s ease;
+  filter: drop-shadow(0 0 10px rgba(255, 138, 40, 0.25));
+}
+
+.core.thinking {
+  transform: scale(1.35);
+  filter: drop-shadow(0 0 26px rgba(255, 138, 40, 0.55));
 }
 
 .core svg {
@@ -104,21 +120,39 @@ body {
 }
 
 .core .ring-outer {
-  animation: spin 14s linear infinite;
+  animation: spin 22s linear infinite;
+  transform-origin: 50px 50px;
+}
+
+.core .ring-mid {
+  animation: spin 16s linear infinite reverse;
   transform-origin: 50px 50px;
 }
 
 .core .ring-inner {
-  animation: spin 8s linear infinite reverse;
+  animation: spin 9s linear infinite;
+  transform-origin: 50px 50px;
+}
+
+.core .streaks {
+  animation: spin 30s linear infinite reverse;
   transform-origin: 50px 50px;
 }
 
 .core.thinking .ring-outer {
-  animation-duration: 2.4s;
+  animation-duration: 4s;
+}
+
+.core.thinking .ring-mid {
+  animation-duration: 3s;
 }
 
 .core.thinking .ring-inner {
-  animation-duration: 1.5s;
+  animation-duration: 1.6s;
+}
+
+.core.thinking .streaks {
+  animation-duration: 5s;
 }
 
 .core .core-glow {
@@ -127,7 +161,7 @@ body {
 }
 
 .core.thinking .core-glow {
-  animation-duration: 0.8s;
+  animation-duration: 0.9s;
 }
 
 @keyframes spin {
@@ -194,6 +228,7 @@ body {
     opacity: 0.3;
   }
 }
+
 .voice-toggle {
   margin-left: auto;
   background: transparent;
@@ -213,7 +248,6 @@ body {
   background: var(--gold);
   border-color: var(--gold);
 }
-
 /* ---------- Chat log ---------- */
 
 .log {
