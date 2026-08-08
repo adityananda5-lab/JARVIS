@@ -1,33 +1,20 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@500;600;700&display=swap");
-
-/* =========================================================
-   J.A.R.V.I.S. VISUAL SYSTEM
-========================================================= */
-
 :root {
-  --bg: #03050b;
-  --panel: rgba(7, 10, 18, 0.88);
+  --bg: #030509;
+  --panel: rgba(7, 9, 15, 0.92);
 
-  --gold: #ffb347;
-  --gold-bright: #ffe0a8;
-  --ember: #ff7418;
-  --ember-dark: #7c2d08;
+  --gold: #ff9d32;
+  --gold-bright: #ffe4b5;
+  --orange: #ff6717;
 
-  --text: #f4eee5;
-  --text-dim: #8f877d;
+  --text: #f5eee6;
+  --text-dim: #8c8378;
 
-  --danger: #ff5c5c;
-
-  --panel-border: rgba(255, 174, 75, 0.25);
+  --danger: #ff5555;
 
   --font-display: "Orbitron", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
   --font-body: "Inter", sans-serif;
 }
-
-/* =========================================================
-   RESET
-========================================================= */
 
 * {
   box-sizing: border-box;
@@ -36,28 +23,32 @@
 html,
 body {
   margin: 0;
+  padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
   background: var(--bg);
   color: var(--text);
+
+  font-family: var(--font-body);
+
+  overflow: hidden;
+
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  font-family: var(--font-body);
-
   background:
     radial-gradient(
-      circle at 50% 45%,
-      rgba(255, 90, 20, 0.035),
-      transparent 42%
+      ellipse at 50% 48%,
+      rgba(255, 91, 15, 0.045),
+      transparent 38%
     ),
-    radial-gradient(
-      circle at 50% 50%,
-      rgba(255, 155, 45, 0.018),
-      transparent 62%
-    ),
-    #03050b;
+    #030509;
+}
+
+button,
+input {
+  font: inherit;
 }
 
 /* =========================================================
@@ -71,25 +62,19 @@ body {
   display: flex;
   flex-direction: column;
 
-  align-items: center;
   justify-content: center;
+  align-items: center;
 
   gap: 18px;
 
-  background:
-    radial-gradient(
-      circle at center,
-      rgba(255, 115, 25, 0.06),
-      transparent 50%
-    ),
-    var(--bg);
+  background: #030509;
 
   font-family: var(--font-mono);
 }
 
 .boot-line {
   font-size: 13px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
 
   color: var(--gold);
 
@@ -97,7 +82,7 @@ body {
 
   animation:
     boot-fade
-    0.42s
+    0.4s
     ease
     forwards;
 }
@@ -109,7 +94,7 @@ body {
 @keyframes boot-fade {
   from {
     opacity: 0;
-    transform: translateY(5px);
+    transform: translateY(4px);
   }
 
   to {
@@ -137,74 +122,6 @@ body {
 }
 
 /* =========================================================
-   AMBIENT BACKGROUND
-========================================================= */
-
-.ambient-glow {
-  position: absolute;
-
-  inset: 0;
-
-  z-index: -2;
-
-  pointer-events: none;
-
-  background:
-    radial-gradient(
-      circle at 50% 48%,
-      rgba(255, 100, 20, 0.055),
-      transparent 34%
-    ),
-    radial-gradient(
-      circle at 50% 48%,
-      rgba(255, 170, 70, 0.025),
-      transparent 58%
-    );
-}
-
-/* tiny atmospheric noise-like dots */
-.app::before {
-  content: "";
-
-  position: absolute;
-
-  inset: 0;
-
-  z-index: -1;
-
-  pointer-events: none;
-
-  opacity: 0.35;
-
-  background-image:
-    radial-gradient(
-      1px 1px at 12% 20%,
-      rgba(255, 210, 160, 0.45),
-      transparent
-    ),
-    radial-gradient(
-      1px 1px at 83% 17%,
-      rgba(255, 180, 100, 0.35),
-      transparent
-    ),
-    radial-gradient(
-      1px 1px at 28% 76%,
-      rgba(255, 210, 160, 0.35),
-      transparent
-    ),
-    radial-gradient(
-      1px 1px at 91% 74%,
-      rgba(255, 170, 90, 0.3),
-      transparent
-    ),
-    radial-gradient(
-      1px 1px at 67% 87%,
-      rgba(255, 200, 130, 0.28),
-      transparent
-    );
-}
-
-/* =========================================================
    HEADER
 ========================================================= */
 
@@ -213,56 +130,52 @@ body {
 
   z-index: 10;
 
-  flex-shrink: 0;
-
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
 
   padding:
-    18px
+    max(18px, env(safe-area-inset-top))
     24px
     0;
 
-  pointer-events: none;
+  flex-shrink: 0;
 }
 
 .title-block {
   display: flex;
   flex-direction: column;
 
-  gap: 4px;
-
-  pointer-events: auto;
+  gap: 5px;
 }
 
 .wordmark {
   font-family: var(--font-display);
 
-  font-size: 20px;
-
   font-weight: 700;
 
-  letter-spacing: 0.19em;
+  font-size: 20px;
+
+  letter-spacing: 0.18em;
 
   color: var(--gold-bright);
 
   text-shadow:
-    0 0 8px rgba(255, 179, 71, 0.55),
-    0 0 22px rgba(255, 115, 25, 0.2);
+    0 0 12px rgba(255, 157, 50, 0.55),
+    0 0 30px rgba(255, 91, 15, 0.18);
 }
 
 .status-line {
   display: flex;
   align-items: center;
 
-  gap: 8px;
+  gap: 7px;
 
   font-family: var(--font-mono);
 
   font-size: 11px;
 
-  letter-spacing: 0.12em;
+  letter-spacing: 0.13em;
 
   color: var(--text-dim);
 }
@@ -271,15 +184,13 @@ body {
   width: 7px;
   height: 7px;
 
-  flex-shrink: 0;
-
   border-radius: 50%;
 
   background: var(--gold);
 
   box-shadow:
     0 0 5px var(--gold),
-    0 0 12px var(--ember);
+    0 0 12px rgba(255, 103, 23, 0.8);
 
   animation:
     status-blink
@@ -288,12 +199,14 @@ body {
     infinite;
 }
 
-.status-dot.processing-dot {
-  animation:
-    processing-blink
-    0.45s
-    ease-in-out
-    infinite;
+.status-dot.processing {
+  background: #ff6817;
+
+  box-shadow:
+    0 0 7px #ff6817,
+    0 0 20px rgba(255, 75, 10, 0.9);
+
+  animation-duration: 0.45s;
 }
 
 @keyframes status-blink {
@@ -303,89 +216,64 @@ body {
   }
 
   50% {
-    opacity: 0.28;
-  }
-}
-
-@keyframes processing-blink {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  50% {
     opacity: 0.35;
-    transform: scale(0.7);
   }
 }
 
 /* =========================================================
-   VOICE BUTTON
+   VOICE
 ========================================================= */
 
 .voice-toggle {
-  pointer-events: auto;
-
   margin-left: auto;
 
-  min-width: 118px;
-
-  padding:
-    9px
-    13px;
-
-  border:
-    1px solid
-    var(--panel-border);
+  padding: 8px 12px;
 
   border-radius: 4px;
 
-  background:
-    rgba(4, 6, 12, 0.7);
+  border:
+    1px solid
+    rgba(255, 157, 50, 0.32);
 
-  color: var(--text-dim);
+  background: rgba(5, 7, 12, 0.5);
+
+  color: #887d71;
 
   font-family: var(--font-mono);
 
   font-size: 10px;
 
-  letter-spacing: 0.1em;
+  letter-spacing: 0.11em;
 
   cursor: pointer;
 
   transition:
+    background 0.2s ease,
     border-color 0.2s ease,
     color 0.2s ease,
-    background 0.2s ease,
     box-shadow 0.2s ease;
 }
 
 .voice-toggle:hover {
   color: var(--gold-bright);
 
-  border-color:
-    rgba(255, 179, 71, 0.55);
-
-  box-shadow:
-    0 0 14px
-    rgba(255, 130, 25, 0.08);
+  border-color: var(--gold);
 }
 
 .voice-toggle.active {
-  color: var(--bg);
+  color: #100b06;
 
   background: var(--gold);
 
   border-color: var(--gold);
 
   box-shadow:
-    0 0 18px
-    rgba(255, 145, 30, 0.18);
+    0 0 14px
+    rgba(255, 157, 50, 0.25);
 }
 
 /* =========================================================
-   ENERGY CORE STAGE
+   REACTOR STAGE
 ========================================================= */
 
 .core-stage {
@@ -396,18 +284,18 @@ body {
   left: 50%;
   top: 52%;
 
-  width: min(78vmin, 820px);
-  height: min(78vmin, 820px);
-
   transform:
     translate(-50%, -50%);
 
+  width: min(72vmin, 680px);
+  height: min(72vmin, 680px);
+
   pointer-events: none;
 
-  /*
-    This is deliberately much larger than the actual
-    bright center. The particles occupy the space.
-  */
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
 }
 
 .energy-core {
@@ -416,15 +304,21 @@ body {
   width: 100%;
   height: 100%;
 
-  transition:
-    transform 0.8s
-      cubic-bezier(
-        0.22,
-        1,
-        0.36,
-        1
-      ),
-    filter 0.8s ease;
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  /*
+    A subtle fade around the edges makes the
+    reactor feel embedded in the black UI.
+  */
+
+  filter:
+    drop-shadow(
+      0 0 16px
+      rgba(255, 83, 12, 0.13)
+    );
 }
 
 .energy-core canvas {
@@ -435,26 +329,20 @@ body {
 }
 
 /*
-  Processing does NOT simply scale a circular object.
-  It increases the visual energy subtly.
+  Thinking state intentionally makes the entire
+  reactor slightly more prominent.
 */
 
-.energy-core.processing {
-  transform: scale(1.08);
-
+.energy-core.thinking {
   filter:
     drop-shadow(
-      0 0 18px
-      rgba(255, 108, 18, 0.18)
+      0 0 30px
+      rgba(255, 82, 10, 0.26)
     );
 }
 
-.energy-core.listening {
-  transform: scale(1.035);
-}
-
 /* =========================================================
-   CHAT LOG
+   CHAT
 ========================================================= */
 
 .log {
@@ -469,9 +357,9 @@ body {
   overflow-y: auto;
 
   padding:
-    26px
+    25px
     20px
-    18px;
+    130px;
 
   display: flex;
 
@@ -480,14 +368,16 @@ body {
   gap: 15px;
 
   /*
-    The visual core sits behind the chat.
+    Important:
+    chat sits above the reactor but remains transparent.
   */
-  pointer-events: auto;
+
+  background: transparent;
 
   scrollbar-width: thin;
 
   scrollbar-color:
-    rgba(255, 179, 71, 0.24)
+    rgba(255, 157, 50, 0.2)
     transparent;
 }
 
@@ -501,9 +391,9 @@ body {
 
 .log::-webkit-scrollbar-thumb {
   background:
-    rgba(255, 179, 71, 0.22);
+    rgba(255, 157, 50, 0.2);
 
-  border-radius: 4px;
+  border-radius: 10px;
 }
 
 .msg-row {
@@ -511,47 +401,37 @@ body {
 
   flex-direction: column;
 
-  width: fit-content;
-
   max-width: min(78%, 720px);
-}
-
-.msg-row.assistant {
-  align-self: flex-start;
-  align-items: flex-start;
 }
 
 .msg-row.user {
   align-self: flex-end;
+
   align-items: flex-end;
 }
 
+.msg-row.assistant {
+  align-self: flex-start;
+
+  align-items: flex-start;
+}
+
 .msg-label {
+  padding: 0 5px;
+
   margin-bottom: 5px;
 
-  padding:
-    0
-    5px;
+  color: #8a8074;
 
   font-family: var(--font-mono);
 
-  font-size: 9px;
+  font-size: 10px;
 
-  letter-spacing: 0.14em;
-
-  color: var(--text-dim);
+  letter-spacing: 0.12em;
 }
 
 .bubble {
-  position: relative;
-
-  padding:
-    10px
-    14px;
-
-  border-radius: 2px;
-
-  font-family: var(--font-body);
+  padding: 10px 14px;
 
   font-size: 14px;
 
@@ -559,44 +439,41 @@ body {
 
   white-space: pre-wrap;
 
-  backdrop-filter:
-    blur(6px);
+  border-radius: 2px;
+
+  backdrop-filter: blur(5px);
 }
 
-/* JARVIS */
 .msg-row.assistant .bubble {
   background:
-    rgba(7, 10, 18, 0.88);
+    rgba(5, 8, 14, 0.78);
 
   border-left:
     2px solid
-    var(--gold);
+    rgba(255, 157, 50, 0.9);
 
   color: var(--text);
 
   box-shadow:
     0 0 18px
-    rgba(255, 130, 20, 0.025);
+    rgba(0, 0, 0, 0.12);
 }
 
-/* YOU */
 .msg-row.user .bubble {
   background:
-    rgba(50, 27, 13, 0.58);
+    rgba(255, 91, 20, 0.08);
 
   border-right:
     2px solid
-    var(--ember);
+    rgba(255, 103, 23, 0.9);
 
   color: var(--text);
 }
 
 .bubble.error {
-  border-color:
-    var(--danger);
+  border-left-color: var(--danger);
 
-  color:
-    #ffb6b6;
+  color: #ffb4b4;
 }
 
 /* =========================================================
@@ -608,9 +485,7 @@ body {
 
   gap: 5px;
 
-  padding:
-    12px
-    14px;
+  padding: 11px 14px;
 }
 
 .thinking-row span {
@@ -619,12 +494,11 @@ body {
 
   border-radius: 50%;
 
-  background:
-    var(--gold);
+  background: var(--gold);
 
   animation:
     thinking-bounce
-    1.1s
+    1.15s
     ease-in-out
     infinite;
 }
@@ -641,13 +515,15 @@ body {
   0%,
   60%,
   100% {
-    opacity: 0.3;
     transform: translateY(0);
+
+    opacity: 0.35;
   }
 
   30% {
+    transform: translateY(-4px);
+
     opacity: 1;
-    transform: translateY(-5px);
   }
 }
 
@@ -658,7 +534,7 @@ body {
 .input-bar {
   position: relative;
 
-  z-index: 10;
+  z-index: 20;
 
   flex-shrink: 0;
 
@@ -669,42 +545,40 @@ body {
   gap: 10px;
 
   padding:
-    14px
+    13px
     20px
-    20px;
+    max(20px, env(safe-area-inset-bottom));
 
   border-top:
     1px solid
-    rgba(255, 174, 75, 0.22);
+    rgba(255, 157, 50, 0.25);
 
   background:
-    rgba(3, 5, 11, 0.94);
+    rgba(3, 5, 9, 0.96);
 
-  backdrop-filter:
-    blur(10px);
+  backdrop-filter: blur(12px);
 }
 
 .input-bar input {
-  min-width: 0;
-
   flex: 1;
 
-  height: 42px;
+  min-width: 0;
+
+  height: 43px;
 
   padding:
-    0
-    14px;
+    0 14px;
 
   border:
     1px solid
-    var(--panel-border);
+    rgba(255, 157, 50, 0.28);
 
   border-radius: 4px;
 
   outline: none;
 
   background:
-    rgba(7, 10, 18, 0.92);
+    rgba(7, 10, 16, 0.92);
 
   color: var(--text);
 
@@ -718,142 +592,124 @@ body {
 }
 
 .input-bar input::placeholder {
-  color:
-    rgba(180, 171, 160, 0.72);
+  color: #777068;
+
+  opacity: 1;
 }
 
 .input-bar input:focus {
-  border-color:
-    rgba(255, 179, 71, 0.7);
+  border-color: var(--gold);
 
   box-shadow:
-    0 0 0 3px
-    rgba(255, 176, 82, 0.08),
-    0 0 18px
-    rgba(255, 115, 20, 0.05);
+    0 0 0 2px
+    rgba(255, 157, 50, 0.08);
 }
 
 .input-bar input:disabled {
-  opacity: 0.65;
+  opacity: 0.55;
 }
 
 /* =========================================================
-   BUTTONS
+   ICON BUTTONS
 ========================================================= */
 
 .icon-btn {
-  width: 42px;
-  height: 42px;
+  width: 43px;
+  height: 43px;
 
   flex-shrink: 0;
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
-  border:
-    1px solid
-    var(--panel-border);
-
   border-radius: 4px;
 
-  background:
-    rgba(7, 10, 18, 0.92);
+  border:
+    1px solid
+    rgba(255, 157, 50, 0.28);
 
-  color:
-    var(--gold);
+  background:
+    rgba(7, 10, 16, 0.9);
+
+  color: var(--gold);
 
   cursor: pointer;
 
   transition:
     border-color 0.2s ease,
     background 0.2s ease,
-    box-shadow 0.2s ease,
     transform 0.15s ease;
 }
 
-.icon-btn:hover:not(:disabled) {
-  border-color:
-    rgba(255, 179, 71, 0.7);
-
-  box-shadow:
-    0 0 15px
-    rgba(255, 115, 20, 0.08);
+.icon-btn:hover {
+  border-color: var(--gold);
 }
 
-.icon-btn:active:not(:disabled) {
-  transform: scale(0.96);
+.icon-btn:active {
+  transform: scale(0.95);
+}
+
+.icon-btn.mic.listening {
+  background: var(--danger);
+
+  border-color: var(--danger);
+
+  color: #100505;
+
+  box-shadow:
+    0 0 18px
+    rgba(255, 85, 85, 0.35);
+}
+
+.icon-btn.send {
+  background:
+    rgba(255, 157, 50, 0.72);
+
+  border-color: var(--gold);
+
+  color: #100a05;
+}
+
+.icon-btn.send:hover {
+  background: var(--gold);
 }
 
 .icon-btn:disabled {
   opacity: 0.35;
 
   cursor: default;
+
+  transform: none;
 }
 
-.mic-symbol {
-  font-size: 17px;
+/* =========================================================
+   DESKTOP
+========================================================= */
 
-  filter:
-    grayscale(0.25);
-}
-
-.icon-btn.mic.listening {
-  background:
-    var(--ember);
-
-  border-color:
-    var(--ember);
-
-  color:
-    var(--bg);
-
-  box-shadow:
-    0 0 20px
-    rgba(255, 86, 15, 0.25);
-
-  animation:
-    mic-pulse
-    1s
-    ease-in-out
-    infinite;
-}
-
-@keyframes mic-pulse {
-  0%,
-  100% {
-    box-shadow:
-      0 0 8px
-      rgba(255, 86, 15, 0.22);
+@media (min-width: 900px) {
+  .header {
+    padding-left: 30px;
+    padding-right: 30px;
   }
 
-  50% {
-    box-shadow:
-      0 0 22px
-      rgba(255, 86, 15, 0.48);
+  .log {
+    padding-left: 30px;
+    padding-right: 30px;
   }
-}
 
-.icon-btn.send {
-  background:
-    rgba(255, 179, 71, 0.88);
+  .input-bar {
+    padding-left: 30px;
+    padding-right: 30px;
+  }
 
-  border-color:
-    var(--gold);
+  .core-stage {
+    width: min(66vmin, 720px);
+    height: min(66vmin, 720px);
 
-  color:
-    var(--bg);
-
-  font-size: 16px;
-}
-
-.icon-btn.send:hover:not(:disabled) {
-  background:
-    var(--gold);
-
-  box-shadow:
-    0 0 18px
-    rgba(255, 160, 40, 0.2);
+    top: 51%;
+  }
 }
 
 /* =========================================================
@@ -863,41 +719,35 @@ body {
 @media (max-width: 600px) {
   .header {
     padding:
-      16px
+      max(15px, env(safe-area-inset-top))
       18px
       0;
   }
 
   .wordmark {
-    font-size: 19px;
+    font-size: 18px;
+
+    letter-spacing: 0.15em;
   }
 
   .voice-toggle {
-    min-width: 104px;
-
-    padding:
-      8px
-      10px;
+    padding: 7px 10px;
 
     font-size: 9px;
   }
 
   .core-stage {
-    /*
-      Put the reactor slightly below center,
-      like your reference.
-    */
-    top: 55%;
+    width: 91vmin;
+    height: 91vmin;
 
-    width: 92vmin;
-    height: 92vmin;
+    top: 52%;
   }
 
   .log {
     padding:
-      22px
       18px
-      16px;
+      14px
+      115px;
   }
 
   .msg-row {
@@ -916,18 +766,23 @@ body {
     gap: 8px;
 
     padding:
+      10px
       12px
-      14px
-      18px;
-  }
-
-  .icon-btn {
-    width: 42px;
-    height: 42px;
+      max(14px, env(safe-area-inset-bottom));
   }
 
   .input-bar input {
-    font-size: 12px;
+    height: 45px;
+
+    font-size: 13px;
+
+    padding:
+      0 11px;
+  }
+
+  .icon-btn {
+    width: 43px;
+    height: 43px;
   }
 }
 
@@ -940,47 +795,39 @@ body {
     font-size: 16px;
   }
 
-  .voice-toggle {
-    min-width: 94px;
-
-    font-size: 8px;
+  .core-stage {
+    width: 95vmin;
+    height: 95vmin;
   }
 
-  .core-stage {
-    width: 96vmin;
-    height: 96vmin;
+  .msg-row {
+    max-width: 94%;
   }
 
   .input-bar {
-    padding:
-      10px
-      10px
-      14px;
+    gap: 6px;
   }
 
   .icon-btn {
-    width: 39px;
-    height: 39px;
+    width: 40px;
+    height: 40px;
   }
 
   .input-bar input {
-    height: 39px;
-    padding:
-      0
-      10px;
+    height: 40px;
+
+    font-size: 12px;
   }
 }
 
 /* =========================================================
-   REDUCED MOTION
+   REDUCE MOTION
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
+  .boot-line,
+  .status-dot,
+  .thinking-row span {
+    animation: none;
   }
 }
