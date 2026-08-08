@@ -3,620 +3,475 @@
 import { useEffect, useRef, useState } from "react";
 
 /* =========================================================
-   BOOT SEQUENCE
+   BOOT
 ========================================================= */
 
 const BOOT_LINES = [
   { text: "INITIALIZING J.A.R.V.I.S. CORE...", dim: false },
   { text: "loading language subsystem", dim: true },
   { text: "calibrating voice interface", dim: true },
-  { text: "mapping cognitive pathways", dim: true },
   { text: "ALL SYSTEMS NOMINAL", dim: false },
 ];
 
 /* =========================================================
-   JARVIS ENERGY CORE
-   Canvas-based instead of SVG.
-
-   Important:
-   There are intentionally NO clean orbital rings here.
-   The visual is constructed from:
-   - particles
-   - irregular wire fragments
-   - radial energy traces
-   - broken arcs
-   - depth layers
-   - a central plasma core
+   ENERGY REACTOR
+   Canvas is used instead of SVG because the reference is
+   intentionally chaotic and organic.
 ========================================================= */
 
-function EnergyCore({ active, listening }) {
+function EnergyCore({ thinking }) {
   const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const stateRef = useRef({
+    width: 0,
+    height: 0,
+    dpr: 1,
+    filaments: [],
+    particles: [],
+    sparks: [],
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d", {
-      alpha: true,
-      desynchronized: true,
-    });
-
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let animationFrame;
-    let width = 0;
-    let height = 0;
-    let dpr = 1;
+    let mounted = true;
 
-    const TAU = Math.PI * 2;
-
-    /*
-      Deterministic random generator.
-      This makes the geometry stable instead of changing
-      completely every time the component renders.
-    */
-    let seed = 834723;
-
-    function random() {
-      seed |= 0;
-      seed = (seed + 0x6d2b79f5) | 0;
-
-      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    }
-
-    function randomRange(min, max) {
-      return min + random() * (max - min);
-    }
+    const state = stateRef.current;
 
     /* -----------------------------------------------------
-       Particle field
+       Utilities
     ----------------------------------------------------- */
 
-    const particles = [];
-    const shards = [];
-    const rays = [];
-    const brokenArcs = [];
+    const random = (min, max) => Math.random() * (max - min) + min;
 
-    const PARTICLE_COUNT = 520;
-    const SHARD_COUNT = 145;
-    const RAY_COUNT = 105;
-    const ARC_COUNT = 12;
-
-    function createParticles() {
-      particles.length = 0;
-
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        const angle = random() * TAU;
-
-        /*
-          Cubic distribution keeps a lot of particles close
-          to the reactor while still allowing outer particles.
-        */
-        const radius =
-          0.08 +
-          Math.pow(random(), 0.48) * 0.82;
-
-        const depth = randomRange(-1, 1);
-
-        particles.push({
-          angle,
-          radius,
-          depth,
-
-          size: randomRange(0.35, 1.65),
-          alpha: randomRange(0.28, 0.95),
-
-          speed: randomRange(0.08, 0.42) *
-            (random() > 0.5 ? 1 : -1),
-
-          wobble: randomRange(0.2, 1.5),
-          phase: random() * TAU,
-
-          warm: random() > 0.18,
-        });
-      }
-    }
+    const clamp = (value, min, max) =>
+      Math.max(min, Math.min(max, value));
 
     /* -----------------------------------------------------
-       Chaotic angular wireframe fragments
+       Create the reactor structure
     ----------------------------------------------------- */
 
-    function createShards() {
-      shards.length = 0;
+    function createWorld() {
+      const base = Math.min(state.width, state.height);
 
-      for (let i = 0; i < SHARD_COUNT; i++) {
-        const angle = random() * TAU;
+      /*
+        The reactor deliberately has no circular orbital
+        structure.
 
-        const startRadius = randomRange(0.15, 0.78);
-        const pointCount = Math.floor(randomRange(3, 8));
+        Instead we create:
+        - angular filaments
+        - fragmented energy trails
+        - particles
+        - small sparks
+      */
+
+      const filamentCount = Math.floor(
+        clamp(base / 2.6, 130, 250)
+      );
+
+      const particleCount = Math.floor(
+        clamp(base * 1.35, 700, 1800)
+      );
+
+      const sparkCount = Math.floor(
+        clamp(base / 2.5, 120, 260)
+      );
+
+      state.filaments = [];
+      state.particles = [];
+      state.sparks = [];
+
+      /* ---------------------------------------------------
+         FILAMENTS
+      --------------------------------------------------- */
+
+      for (let i = 0; i < filamentCount; i++) {
+        const angle = random(0, Math.PI * 2);
+
+        const startRadius = random(
+          base * 0.055,
+          base * 0.15
+        );
+
+        const length = random(
+          base * 0.10,
+          base * 0.43
+        );
 
         const points = [];
 
-        let currentAngle = angle;
-        let currentRadius = startRadius;
+        let x = Math.cos(angle) * startRadius;
+        let y = Math.sin(angle) * startRadius;
 
-        for (let p = 0; p < pointCount; p++) {
+        let direction = angle + random(-0.7, 0.7);
+
+        const steps = Math.floor(random(4, 14));
+
+        for (let p = 0; p < steps; p++) {
           /*
-            Angular movement deliberately jumps around.
-            This creates the broken holographic geometry
-            seen in the reference instead of clean spokes.
+            Angular movement rather than smooth curves.
+            This is what prevents the "solar system" look.
           */
-          currentAngle += randomRange(-0.55, 0.55);
-          currentRadius += randomRange(-0.14, 0.20);
 
-          currentRadius = Math.max(
-            0.08,
-            Math.min(1.18, currentRadius)
-          );
+          direction += random(-0.65, 0.65);
+
+          const stepLength =
+            length / steps * random(0.45, 1.25);
+
+          x += Math.cos(direction) * stepLength;
+          y += Math.sin(direction) * stepLength;
 
           points.push({
-            angle: currentAngle,
-            radius: currentRadius,
-            offset: randomRange(-0.035, 0.035),
+            x,
+            y,
           });
         }
 
-        shards.push({
+        state.filaments.push({
           points,
-          rotation: randomRange(-0.02, 0.02),
-          speed: randomRange(-0.12, 0.12),
-          alpha: randomRange(0.16, 0.68),
-          width: randomRange(0.35, 1.15),
-          phase: random() * TAU,
-          pulse: randomRange(0.5, 2),
-        });
-      }
-    }
-
-    /* -----------------------------------------------------
-       Irregular outward energy traces
-    ----------------------------------------------------- */
-
-    function createRays() {
-      rays.length = 0;
-
-      for (let i = 0; i < RAY_COUNT; i++) {
-        const angle = random() * TAU;
-
-        const start = randomRange(0.10, 0.32);
-        const length = randomRange(0.25, 1.05);
-
-        rays.push({
           angle,
-          start,
-          length,
+          speed: random(-0.0009, 0.0009),
+          rotation: random(-0.0015, 0.0015),
+          opacity: random(0.16, 0.62),
+          width: random(0.35, 1.35),
+          phase: random(0, Math.PI * 2),
+          flicker: random(0.6, 2.2),
+        });
+      }
 
-          bend: randomRange(-0.18, 0.18),
+      /* ---------------------------------------------------
+         PARTICLE CLOUD
+      --------------------------------------------------- */
 
-          alpha: randomRange(0.08, 0.42),
-          width: randomRange(0.25, 0.85),
+      for (let i = 0; i < particleCount; i++) {
+        const angle = random(0, Math.PI * 2);
 
-          speed: randomRange(0.04, 0.20),
-          phase: random() * TAU,
+        /*
+          sqrt creates a more natural area distribution.
+          We intentionally make the cloud irregular.
+        */
+
+        const radius =
+          Math.pow(Math.random(), 0.62) *
+          base *
+          random(0.16, 0.46);
+
+        const irregularity =
+          1 +
+          Math.sin(angle * random(3, 9)) *
+            random(0.04, 0.24);
+
+        state.particles.push({
+          angle,
+          radius: radius * irregularity,
+          size: random(0.35, 1.65),
+          opacity: random(0.12, 0.75),
+          speed: random(-0.002, 0.002),
+          drift: random(-0.18, 0.18),
+          phase: random(0, Math.PI * 2),
+        });
+      }
+
+      /* ---------------------------------------------------
+         SMALL ENERGY SPARKS
+      --------------------------------------------------- */
+
+      for (let i = 0; i < sparkCount; i++) {
+        const angle = random(0, Math.PI * 2);
+
+        const radius =
+          random(base * 0.12, base * 0.48);
+
+        state.sparks.push({
+          angle,
+          radius,
+          length: random(3, 22),
+          width: random(0.4, 1.1),
+          opacity: random(0.12, 0.65),
+          speed: random(-0.004, 0.004),
+          phase: random(0, Math.PI * 2),
         });
       }
     }
 
     /* -----------------------------------------------------
-       Broken arcs
-       These are intentionally sparse and irregular.
-       They are NOT orbital rings.
-    ----------------------------------------------------- */
-
-    function createBrokenArcs() {
-      brokenArcs.length = 0;
-
-      for (let i = 0; i < ARC_COUNT; i++) {
-        brokenArcs.push({
-          angle: random() * TAU,
-          radius: randomRange(0.42, 0.95),
-          start: randomRange(0, TAU),
-          length: randomRange(0.20, 0.85),
-          width: randomRange(0.3, 0.85),
-          alpha: randomRange(0.15, 0.38),
-          speed: randomRange(-0.035, 0.035),
-          eccentricity: randomRange(0.72, 1.08),
-        });
-      }
-    }
-
-    createParticles();
-    createShards();
-    createRays();
-    createBrokenArcs();
-
-    /* -----------------------------------------------------
-       Resize
+       RESIZE
     ----------------------------------------------------- */
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
 
-      width = Math.max(1, rect.width);
-      height = Math.max(1, rect.height);
+      state.width = rect.width;
+      state.height = rect.height;
 
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      state.dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-      canvas.width = Math.floor(width * dpr);
-      canvas.height = Math.floor(height * dpr);
+      canvas.width = rect.width * state.dpr;
+      canvas.height = rect.height * state.dpr;
 
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.setTransform(
+        state.dpr,
+        0,
+        0,
+        state.dpr,
+        0,
+        0
+      );
+
+      createWorld();
     }
 
     resize();
 
-    const resizeObserver = new ResizeObserver(resize);
-    resizeObserver.observe(canvas);
+    window.addEventListener("resize", resize);
 
     /* -----------------------------------------------------
-       Drawing helpers
+       DRAW
     ----------------------------------------------------- */
 
-    function pointFromPolar(angle, radius, time, depth = 0) {
-      const maxRadius = Math.min(width, height) * 0.49;
+    let time = 0;
 
-      /*
-        Very subtle turbulence.
-        This prevents the visual from becoming a perfect circle.
-      */
-      const turbulence =
-        Math.sin(time * 0.00055 + angle * 4.2 + depth * 3) *
-        maxRadius *
-        0.008;
+    function draw() {
+      if (!mounted) return;
 
-      const r = radius * maxRadius + turbulence;
+      time += thinking ? 1.9 : 0.72;
 
-      /*
-        Depth compresses the Y axis slightly.
-        This gives the field a holographic 3D impression.
-      */
-      const depthScale = 0.88 + depth * 0.08;
-
-      return {
-        x: Math.cos(angle) * r,
-        y: Math.sin(angle) * r * depthScale,
-      };
-    }
-
-    function drawCore(cx, cy, time, intensity) {
-      const coreSize =
-        Math.min(width, height) *
-        (0.038 + intensity * 0.012);
-
-      /* Outer atmospheric glow */
-      const outer = ctx.createRadialGradient(
-        cx,
-        cy,
-        0,
-        cx,
-        cy,
-        coreSize * 7
-      );
-
-      outer.addColorStop(0, `rgba(255, 232, 190, ${0.55 * intensity})`);
-      outer.addColorStop(0.16, `rgba(255, 166, 55, ${0.42 * intensity})`);
-      outer.addColorStop(0.42, `rgba(255, 100, 10, ${0.16 * intensity})`);
-      outer.addColorStop(1, "rgba(255, 60, 0, 0)");
-
-      ctx.fillStyle = outer;
-      ctx.beginPath();
-      ctx.arc(cx, cy, coreSize * 7, 0, TAU);
-      ctx.fill();
-
-      /* Inner orange plasma */
-      const glow = ctx.createRadialGradient(
-        cx - coreSize * 0.12,
-        cy - coreSize * 0.12,
-        0,
-        cx,
-        cy,
-        coreSize * 1.8
-      );
-
-      glow.addColorStop(0, "#ffffff");
-      glow.addColorStop(0.22, "#fff5dc");
-      glow.addColorStop(0.48, "#ffc15a");
-      glow.addColorStop(0.72, "#ff7a0a");
-      glow.addColorStop(1, "rgba(255, 71, 0, 0)");
-
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(cx, cy, coreSize * 1.8, 0, TAU);
-      ctx.fill();
-
-      /* White hot center */
-      ctx.fillStyle = "#fffdf5";
-      ctx.shadowColor = "#fff1c9";
-      ctx.shadowBlur = 20 + intensity * 20;
-
-      ctx.beginPath();
-      ctx.arc(cx, cy, coreSize * 0.62, 0, TAU);
-      ctx.fill();
-
-      ctx.shadowBlur = 0;
-
-      /*
-        Small plasma tendrils around the core.
-      */
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-
-      for (let i = 0; i < 20; i++) {
-        const a =
-          (i / 20) * TAU +
-          Math.sin(time * 0.001 + i) * 0.15;
-
-        const innerR = coreSize * 1.15;
-        const outerR =
-          coreSize *
-          randomRange(2.1, 3.6);
-
-        const wobble =
-          Math.sin(time * 0.002 + i * 2.4) * 3;
-
-        ctx.strokeStyle =
-          `rgba(255, ${125 + (i % 3) * 25}, 35, ${0.10 + intensity * 0.10})`;
-
-        ctx.lineWidth = 0.45;
-
-        ctx.beginPath();
-        ctx.moveTo(
-          cx + Math.cos(a) * innerR,
-          cy + Math.sin(a) * innerR
-        );
-
-        ctx.lineTo(
-          cx + Math.cos(a + 0.08) * outerR + wobble,
-          cy + Math.sin(a + 0.08) * outerR
-        );
-
-        ctx.stroke();
-      }
-
-      ctx.restore();
-    }
-
-    /* -----------------------------------------------------
-       Main render loop
-    ----------------------------------------------------- */
-
-    function render(time) {
-      /*
-        State intensity:
-        idle       = 1
-        listening  = 1.35
-        processing = 1.75
-      */
-      const intensity = active
-        ? 1.75
-        : listening
-        ? 1.35
-        : 1;
-
-      ctx.clearRect(0, 0, width, height);
+      const width = state.width;
+      const height = state.height;
 
       const cx = width / 2;
       const cy = height / 2;
 
-      /* Very faint atmospheric background */
-      const atmosphere = ctx.createRadialGradient(
-        cx,
-        cy,
-        0,
-        cx,
-        cy,
-        Math.min(width, height) * 0.52
-      );
-
-      atmosphere.addColorStop(
-        0,
-        `rgba(255, 106, 20, ${0.045 * intensity})`
-      );
-
-      atmosphere.addColorStop(
-        0.45,
-        `rgba(255, 72, 10, ${0.018 * intensity})`
-      );
-
-      atmosphere.addColorStop(1, "rgba(0,0,0,0)");
-
-      ctx.fillStyle = atmosphere;
-      ctx.fillRect(0, 0, width, height);
+      const base = Math.min(width, height);
 
       /* ---------------------------------------------------
-         Irregular energy rays
+         BACKGROUND
+      --------------------------------------------------- */
+
+      ctx.clearRect(0, 0, width, height);
+
+      /*
+        Large soft orange haze.
+        This is deliberately subtle.
+      */
+
+      const ambient = ctx.createRadialGradient(
+        cx,
+        cy,
+        0,
+        cx,
+        cy,
+        base * 0.48
+      );
+
+      ambient.addColorStop(
+        0,
+        thinking
+          ? "rgba(255,125,24,0.22)"
+          : "rgba(255,115,20,0.13)"
+      );
+
+      ambient.addColorStop(
+        0.22,
+        "rgba(255,86,10,0.09)"
+      );
+
+      ambient.addColorStop(
+        0.55,
+        "rgba(255,50,0,0.025)"
+      );
+
+      ambient.addColorStop(
+        1,
+        "rgba(0,0,0,0)"
+      );
+
+      ctx.fillStyle = ambient;
+
+      ctx.fillRect(
+        cx - base * 0.5,
+        cy - base * 0.5,
+        base,
+        base
+      );
+
+      /* ---------------------------------------------------
+         PARTICLES
       --------------------------------------------------- */
 
       ctx.save();
-      ctx.translate(cx, cy);
       ctx.globalCompositeOperation = "lighter";
 
-      for (let i = 0; i < rays.length; i++) {
-        const r = rays[i];
+      for (const p of state.particles) {
+        p.angle +=
+          p.speed *
+          (thinking ? 3.0 : 1.0);
 
-        const animatedAngle =
-          r.angle +
-          time * 0.00002 * r.speed * intensity;
-
-        const pulse =
-          0.7 +
+        const breathing =
           Math.sin(
-            time * 0.001 * (0.8 + r.speed * 4) +
-              r.phase
-          ) *
-            0.3;
+            time * 0.012 +
+              p.phase
+          ) * p.drift;
 
-        const startPoint = pointFromPolar(
-          animatedAngle,
-          r.start,
-          time,
-          0
-        );
-
-        const endPoint = pointFromPolar(
-          animatedAngle + r.bend,
-          r.start + r.length * pulse,
-          time,
-          0
-        );
-
-        ctx.strokeStyle = `rgba(255, ${
-          95 + Math.floor(r.alpha * 100)
-        }, 20, ${
-          r.alpha * intensity
-        })`;
-
-        ctx.lineWidth = r.width;
-
-        ctx.beginPath();
-        ctx.moveTo(startPoint.x, startPoint.y);
+        const r =
+          p.radius *
+          (1 + breathing * 0.07);
 
         /*
-          A kink halfway through the line.
-          This is important: straight spokes look like a sun.
+          Add asymmetric distortion.
+          This prevents a clean circular cloud.
         */
-        const middle = pointFromPolar(
-          animatedAngle + r.bend * 0.4,
-          r.start + r.length * pulse * 0.48,
-          time,
-          0
+
+        const distortionX =
+          Math.sin(
+            p.angle * 3.7 +
+              time * 0.004
+          ) *
+          base *
+          0.012;
+
+        const distortionY =
+          Math.cos(
+            p.angle * 5.1 -
+              time * 0.003
+          ) *
+          base *
+          0.012;
+
+        const x =
+          cx +
+          Math.cos(p.angle) * r +
+          distortionX;
+
+        const y =
+          cy +
+          Math.sin(p.angle) *
+            r *
+            0.91 +
+          distortionY;
+
+        const flicker =
+          0.65 +
+          Math.sin(
+            time * 0.025 +
+              p.phase
+          ) *
+            0.35;
+
+        ctx.beginPath();
+
+        ctx.arc(
+          x,
+          y,
+          p.size *
+            (thinking ? 1.15 : 1),
+          0,
+          Math.PI * 2
         );
 
-        ctx.lineTo(middle.x, middle.y);
-        ctx.lineTo(endPoint.x, endPoint.y);
-        ctx.stroke();
+        ctx.fillStyle = `rgba(255, ${
+          random(145, 215).toFixed(0)
+        }, 55, ${
+          (p.opacity * flicker).toFixed(3)
+        })`;
+
+        ctx.fill();
       }
 
       ctx.restore();
 
       /* ---------------------------------------------------
-         Chaotic wireframe fragments
+         ANGULAR ENERGY FILAMENTS
       --------------------------------------------------- */
 
       ctx.save();
+
       ctx.translate(cx, cy);
-      ctx.globalCompositeOperation = "lighter";
 
-      for (let i = 0; i < shards.length; i++) {
-        const shard = shards[i];
+      for (const f of state.filaments) {
+        /*
+          Slow rotation normally.
+          Fast chaotic movement while thinking.
+        */
 
-        const rotation =
-          shard.rotation +
-          time * 0.00001 * shard.speed * intensity;
+        f.angle +=
+          f.speed *
+          (thinking ? 7 : 1);
 
-        const flicker =
-          0.55 +
+        const pulse =
+          0.72 +
           Math.sin(
-            time * 0.001 * shard.pulse +
-              shard.phase
+            time * 0.018 * f.flicker +
+              f.phase
           ) *
-            0.45;
+            0.28;
+
+        const opacity =
+          f.opacity *
+          pulse *
+          (thinking ? 1.18 : 1);
+
+        ctx.save();
+
+        ctx.rotate(f.angle);
 
         ctx.beginPath();
 
-        for (let p = 0; p < shard.points.length; p++) {
-          const point = shard.points[p];
+        for (let i = 0; i < f.points.length; i++) {
+          const point = f.points[i];
 
-          const angle =
-            point.angle +
-            rotation +
+          /*
+            Distort each point independently.
+            This produces the hand-drawn / unstable
+            energy-network appearance.
+          */
+
+          const wobbleX =
             Math.sin(
-              time * 0.0005 +
-                p * 1.7 +
-                shard.phase
+              time * 0.008 +
+                i * 2.1 +
+                f.phase
             ) *
-              0.012;
+            base *
+            0.008;
 
-          const radius =
-            point.radius +
-            Math.sin(
-              time * 0.0008 +
-                p * 2.1 +
-                shard.phase
+          const wobbleY =
+            Math.cos(
+              time * 0.009 +
+                i * 1.7 +
+                f.phase
             ) *
-              0.018;
+            base *
+            0.008;
 
-          const pos = pointFromPolar(
-            angle,
-            radius,
-            time,
-            p % 2 === 0 ? 0.5 : -0.5
-          );
+          const x = point.x + wobbleX;
+          const y = point.y + wobbleY;
 
-          if (p === 0) {
-            ctx.moveTo(pos.x, pos.y);
+          if (i === 0) {
+            ctx.moveTo(x, y);
           } else {
-            ctx.lineTo(pos.x, pos.y);
+            ctx.lineTo(x, y);
           }
         }
 
-        const gold =
-          i % 5 === 0
-            ? "255, 206, 105"
-            : "255, 135, 35";
-
-        ctx.strokeStyle =
-          `rgba(${gold}, ${
-            shard.alpha * flicker * intensity
-          })`;
+        ctx.strokeStyle = `rgba(255, ${
+          thinking ? 115 : 145
+        }, 35, ${opacity.toFixed(3)})`;
 
         ctx.lineWidth =
-          shard.width *
-          (active ? 1.12 : 1);
+          f.width *
+          (thinking ? 1.18 : 1);
 
-        ctx.stroke();
-      }
+        ctx.shadowBlur =
+          thinking ? 8 : 3;
 
-      ctx.restore();
+        ctx.shadowColor =
+          "rgba(255,100,20,0.7)";
 
-      /* ---------------------------------------------------
-         Broken arcs
-      --------------------------------------------------- */
-
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.globalCompositeOperation = "lighter";
-
-      for (let i = 0; i < brokenArcs.length; i++) {
-        const arc = brokenArcs[i];
-
-        const rotation =
-          arc.angle +
-          time * 0.0001 * arc.speed;
-
-        const radius =
-          arc.radius *
-          Math.min(width, height) *
-          0.49;
-
-        ctx.save();
-        ctx.rotate(rotation);
-
-        ctx.beginPath();
-
-        /*
-          Elliptical, broken and incomplete.
-          This prevents the "solar system" effect.
-        */
-        ctx.ellipse(
-          0,
-          0,
-          radius,
-          radius * arc.eccentricity,
-          0,
-          arc.start,
-          arc.start + arc.length
-        );
-
-        ctx.strokeStyle =
-          `rgba(255, 179, 71, ${
-            arc.alpha * intensity
-          })`;
-
-        ctx.lineWidth = arc.width;
         ctx.stroke();
 
         ctx.restore();
@@ -625,105 +480,340 @@ function EnergyCore({ active, listening }) {
       ctx.restore();
 
       /* ---------------------------------------------------
-         Particles
+         EXTRA MICRO-FILAMENTS
       --------------------------------------------------- */
 
       ctx.save();
       ctx.translate(cx, cy);
       ctx.globalCompositeOperation = "lighter";
 
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
+      const microCount = thinking ? 180 : 85;
 
-        p.angle +=
-          p.speed *
-          0.00002 *
-          intensity;
+      for (let i = 0; i < microCount; i++) {
+        const angle =
+          i * 2.399 +
+          Math.sin(time * 0.002 + i) * 0.12;
 
-        const animatedRadius =
-          p.radius +
-          Math.sin(
-            time * 0.0007 * p.wobble +
-              p.phase
+        const radius =
+          base *
+          (0.055 +
+            ((i * 37) % 100) / 100 *
+              0.43);
+
+        const len =
+          random(5, 32) *
+          (thinking ? 1.15 : 1);
+
+        const x1 =
+          Math.cos(angle) * radius;
+
+        const y1 =
+          Math.sin(angle) *
+          radius *
+          random(0.78, 1.1);
+
+        const x2 =
+          x1 +
+          Math.cos(
+            angle +
+              random(-1.1, 1.1)
           ) *
-            0.018 *
-            intensity;
+            len;
 
-        const pos = pointFromPolar(
-          p.angle,
-          animatedRadius,
-          time,
-          p.depth
-        );
-
-        /*
-          Particles closer to the camera are larger.
-        */
-        const depthSize =
-          p.size *
-          (0.72 + (p.depth + 1) * 0.28);
-
-        const flicker =
-          0.55 +
+        const y2 =
+          y1 +
           Math.sin(
-            time * 0.002 +
-              p.phase
+            angle +
+              random(-1.1, 1.1)
           ) *
-            0.45;
-
-        const alpha =
-          p.alpha *
-          flicker *
-          (active ? 1.22 : 1);
-
-        ctx.fillStyle = p.warm
-          ? `rgba(255, ${
-              135 + Math.floor(p.depth * 25)
-            }, 50, ${alpha})`
-          : `rgba(255, 210, 135, ${alpha})`;
+            len;
 
         ctx.beginPath();
-        ctx.arc(
-          pos.x,
-          pos.y,
-          depthSize,
-          0,
-          TAU
-        );
-        ctx.fill();
+
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+
+        ctx.strokeStyle =
+          `rgba(255, ${
+            thinking ? 125 : 155
+          }, 45, ${
+            random(0.08, 0.38)
+          })`;
+
+        ctx.lineWidth =
+          random(0.25, 0.8);
+
+        ctx.stroke();
       }
 
       ctx.restore();
 
       /* ---------------------------------------------------
-         Central core last, so it sits above everything.
+         SPARKS
       --------------------------------------------------- */
 
-      drawCore(
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.globalCompositeOperation = "lighter";
+
+      for (const s of state.sparks) {
+        s.angle +=
+          s.speed *
+          (thinking ? 5 : 1);
+
+        const pulse =
+          0.5 +
+          Math.sin(
+            time * 0.035 +
+              s.phase
+          ) *
+            0.5;
+
+        const r = s.radius;
+
+        const x =
+          Math.cos(s.angle) * r;
+
+        const y =
+          Math.sin(s.angle) *
+          r *
+          0.92;
+
+        const x2 =
+          x +
+          Math.cos(
+            s.angle +
+              random(-0.5, 0.5)
+          ) *
+            s.length;
+
+        const y2 =
+          y +
+          Math.sin(
+            s.angle +
+              random(-0.5, 0.5)
+          ) *
+            s.length;
+
+        ctx.beginPath();
+
+        ctx.moveTo(x, y);
+        ctx.lineTo(x2, y2);
+
+        ctx.strokeStyle =
+          `rgba(255, 174, 70, ${
+            (s.opacity * pulse).toFixed(3)
+          })`;
+
+        ctx.lineWidth =
+          s.width *
+          (thinking ? 1.2 : 1);
+
+        ctx.stroke();
+      }
+
+      ctx.restore();
+
+      /* ---------------------------------------------------
+         CENTRAL ENERGY CORE
+      --------------------------------------------------- */
+
+      const coreSize =
+        base *
+        (thinking ? 0.048 : 0.040);
+
+      /*
+        Large blurred energy field.
+      */
+
+      ctx.save();
+
+      ctx.globalCompositeOperation = "lighter";
+
+      const glow = ctx.createRadialGradient(
         cx,
         cy,
-        time,
-        intensity
+        0,
+        cx,
+        cy,
+        base *
+          (thinking ? 0.22 : 0.17)
       );
 
-      animationFrame =
-        requestAnimationFrame(render);
+      glow.addColorStop(
+        0,
+        "rgba(255,255,245,0.98)"
+      );
+
+      glow.addColorStop(
+        0.025,
+        "rgba(255,245,205,0.98)"
+      );
+
+      glow.addColorStop(
+        0.07,
+        "rgba(255,185,75,0.85)"
+      );
+
+      glow.addColorStop(
+        0.19,
+        "rgba(255,104,18,0.45)"
+      );
+
+      glow.addColorStop(
+        0.42,
+        "rgba(255,55,5,0.14)"
+      );
+
+      glow.addColorStop(
+        1,
+        "rgba(255,40,0,0)"
+      );
+
+      ctx.fillStyle = glow;
+
+      ctx.beginPath();
+
+      ctx.arc(
+        cx,
+        cy,
+        base *
+          (thinking ? 0.22 : 0.17),
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      /* ---------------------------------------------------
+         WHITE-HOT CORE
+      --------------------------------------------------- */
+
+      const coreGradient =
+        ctx.createRadialGradient(
+          cx - coreSize * 0.2,
+          cy - coreSize * 0.2,
+          0,
+          cx,
+          cy,
+          coreSize
+        );
+
+      coreGradient.addColorStop(
+        0,
+        "#ffffff"
+      );
+
+      coreGradient.addColorStop(
+        0.38,
+        "#fff8df"
+      );
+
+      coreGradient.addColorStop(
+        0.72,
+        "#ffbd57"
+      );
+
+      coreGradient.addColorStop(
+        1,
+        "rgba(255,105,20,0)"
+      );
+
+      ctx.fillStyle = coreGradient;
+
+      ctx.beginPath();
+
+      ctx.arc(
+        cx,
+        cy,
+        coreSize,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      ctx.restore();
+
+      /* ---------------------------------------------------
+         CENTRAL FLICKERING PARTICLES
+      --------------------------------------------------- */
+
+      ctx.save();
+
+      ctx.globalCompositeOperation = "lighter";
+
+      const centralParticles =
+        thinking ? 120 : 65;
+
+      for (let i = 0; i < centralParticles; i++) {
+        const angle =
+          Math.random() *
+          Math.PI *
+          2;
+
+        const radius =
+          Math.random() *
+          base *
+          (thinking ? 0.13 : 0.10);
+
+        const x =
+          cx +
+          Math.cos(angle) * radius;
+
+        const y =
+          cy +
+          Math.sin(angle) * radius;
+
+        ctx.beginPath();
+
+        ctx.arc(
+          x,
+          y,
+          random(0.25, 1.15),
+          0,
+          Math.PI * 2
+        );
+
+        ctx.fillStyle =
+          `rgba(255, ${
+            random(170, 240)
+          }, 90, ${
+            random(0.15, 0.8)
+          })`;
+
+        ctx.fill();
+      }
+
+      ctx.restore();
+
+      animationRef.current =
+        requestAnimationFrame(draw);
     }
 
-    animationFrame =
-      requestAnimationFrame(render);
+    draw();
 
     return () => {
-      cancelAnimationFrame(animationFrame);
-      resizeObserver.disconnect();
+      mounted = false;
+
+      window.removeEventListener(
+        "resize",
+        resize
+      );
+
+      if (animationRef.current) {
+        cancelAnimationFrame(
+          animationRef.current
+        );
+      }
     };
-  }, [active, listening]);
+  }, [thinking]);
 
   return (
     <div
       className={`energy-core ${
-        active ? "processing" : ""
-      } ${listening ? "listening" : ""}`}
+        thinking ? "thinking" : ""
+      }`}
     >
       <canvas ref={canvasRef} />
     </div>
@@ -754,11 +844,10 @@ export default function Home() {
 
   const logRef = useRef(null);
   const recognitionRef = useRef(null);
-  const audioRef = useRef(null);
 
-  /* -------------------------------------------------------
-     Boot sequence
-  ------------------------------------------------------- */
+  /* =======================================================
+     BOOT SEQUENCE
+  ======================================================= */
 
   useEffect(() => {
     if (
@@ -767,7 +856,7 @@ export default function Home() {
     ) {
       const timer = setTimeout(() => {
         setVisibleBootLines(
-          (value) => value + 1
+          (n) => n + 1
         );
       }, 380);
 
@@ -783,32 +872,33 @@ export default function Home() {
       clearTimeout(timer);
   }, [visibleBootLines]);
 
-  /* -------------------------------------------------------
-     Auto scroll
-  ------------------------------------------------------- */
+  /* =======================================================
+     CHAT AUTO SCROLL
+  ======================================================= */
 
   useEffect(() => {
     const log = logRef.current;
 
     if (!log) return;
 
-    requestAnimationFrame(() => {
-      log.scrollTo({
-        top: log.scrollHeight,
-        behavior: "smooth",
-      });
+    log.scrollTo({
+      top: log.scrollHeight,
+      behavior: "smooth",
     });
   }, [messages, loading]);
 
-  /* -------------------------------------------------------
-     Speech recognition
-  ------------------------------------------------------- */
+  /* =======================================================
+     SPEECH RECOGNITION
+  ======================================================= */
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
     const SpeechRecognition =
-      typeof window !== "undefined" &&
-      (window.SpeechRecognition ||
-        window.webkitSpeechRecognition);
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       return;
@@ -821,17 +911,12 @@ export default function Home() {
     recognition.interimResults = false;
     recognition.lang = "en-US";
 
-    recognition.onstart = () => {
-      setListening(true);
-    };
-
     recognition.onresult = (event) => {
       const transcript =
-        event.results?.[0]?.[0]?.transcript;
+        event.results?.[0]?.[0]?.transcript ||
+        "";
 
-      if (transcript) {
-        setInput(transcript);
-      }
+      setInput(transcript);
     };
 
     recognition.onerror = (event) => {
@@ -843,15 +928,7 @@ export default function Home() {
           "service-not-allowed"
       ) {
         alert(
-          "Microphone access was blocked. Allow microphone access for this website and try again."
-        );
-      } else if (
-        event.error !== "no-speech" &&
-        event.error !== "aborted"
-      ) {
-        alert(
-          "Voice input error: " +
-            event.error
+          "Microphone access was blocked. Allow microphone access for this site."
         );
       }
     };
@@ -865,14 +942,14 @@ export default function Home() {
 
     return () => {
       try {
-        recognition.abort();
+        recognition.stop();
       } catch {}
     };
   }, []);
 
-  /* -------------------------------------------------------
-     Microphone
-  ------------------------------------------------------- */
+  /* =======================================================
+     MICROPHONE
+  ======================================================= */
 
   function toggleMic() {
     const recognition =
@@ -880,7 +957,7 @@ export default function Home() {
 
     if (!recognition) {
       alert(
-        "Voice input is not supported by this browser. Try Chrome or Edge."
+        "Voice input isn't supported in this browser. Try Chrome or Edge."
       );
       return;
     }
@@ -902,21 +979,14 @@ export default function Home() {
     }
   }
 
-  /* -------------------------------------------------------
-     Voice output
-  ------------------------------------------------------- */
+  /* =======================================================
+     TEXT TO SPEECH
+  ======================================================= */
 
   async function speak(text) {
-    if (!voiceOn || !text) {
-      return;
-    }
+    if (!voiceOn) return;
 
     try {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-      }
-
       const response =
         await fetch("/api/speak", {
           method: "POST",
@@ -935,54 +1005,53 @@ export default function Home() {
             .json()
             .catch(() => null);
 
-        throw new Error(
-          data?.error ||
-            `HTTP ${response.status}`
+        alert(
+          "Voice playback failed: " +
+            (data?.error ||
+              `HTTP ${response.status}`)
         );
+
+        return;
       }
 
-      const blob =
+      const audioBlob =
         await response.blob();
 
-      const url =
-        URL.createObjectURL(blob);
+      const audioUrl =
+        URL.createObjectURL(
+          audioBlob
+        );
 
       const audio =
-        new Audio(url);
-
-      audioRef.current = audio;
+        new Audio(audioUrl);
 
       audio.onended = () => {
-        URL.revokeObjectURL(url);
-      };
-
-      audio.onerror = () => {
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(
+          audioUrl
+        );
       };
 
       await audio.play();
     } catch (error) {
-      console.error(
-        "Voice playback failed:",
-        error
-      );
-
       alert(
         "Voice playback failed: " +
-          (error?.message ||
-            "Unknown error")
+          error.message
       );
     }
   }
 
-  /* -------------------------------------------------------
-     Chat
-  ------------------------------------------------------- */
+  /* =======================================================
+     SEND MESSAGE
+  ======================================================= */
 
   async function sendMessage() {
-    const text = input.trim();
+    const text =
+      input.trim();
 
-    if (!text || loading) {
+    if (
+      !text ||
+      loading
+    ) {
       return;
     }
 
@@ -1007,7 +1076,8 @@ export default function Home() {
               "application/json",
           },
           body: JSON.stringify({
-            messages: nextMessages,
+            messages:
+              nextMessages,
           }),
         });
 
@@ -1022,7 +1092,7 @@ export default function Home() {
           {
             role: "assistant",
             content:
-              data?.error ||
+              data.error ||
               "Something went wrong.",
             error: true,
           },
@@ -1032,8 +1102,8 @@ export default function Home() {
       }
 
       const reply =
-        data?.reply ||
-        "I received your request, but no response was returned.";
+        data.reply ||
+        "I received your message.";
 
       setMessages((current) => [
         ...current,
@@ -1044,18 +1114,13 @@ export default function Home() {
       ]);
 
       await speak(reply);
-    } catch (error) {
-      console.error(
-        "Chat request failed:",
-        error
-      );
-
+    } catch {
       setMessages((current) => [
         ...current,
         {
           role: "assistant",
           content:
-            "I couldn't reach the server. Check your connection and try again.",
+            "I couldn't reach the server. Check your connection.",
           error: true,
         },
       ]);
@@ -1064,19 +1129,9 @@ export default function Home() {
     }
   }
 
-  function handleInputKeyDown(event) {
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
-      event.preventDefault();
-      sendMessage();
-    }
-  }
-
-  /* -------------------------------------------------------
-     Boot screen
-  ------------------------------------------------------- */
+  /* =======================================================
+     BOOT SCREEN
+  ======================================================= */
 
   if (!booted) {
     return (
@@ -1088,7 +1143,9 @@ export default function Home() {
           <div
             key={index}
             className={`boot-line ${
-              line.dim ? "dim" : ""
+              line.dim
+                ? "dim"
+                : ""
             }`}
           >
             {line.text}
@@ -1098,13 +1155,13 @@ export default function Home() {
     );
   }
 
-  /* -------------------------------------------------------
-     Main UI
-  ------------------------------------------------------- */
+  /* =======================================================
+     UI
+  ======================================================= */
 
   return (
     <main className="app">
-      <div className="ambient-glow" />
+      {/* HEADER */}
 
       <header className="header">
         <div className="title-block">
@@ -1116,49 +1173,47 @@ export default function Home() {
             <span
               className={`status-dot ${
                 loading
-                  ? "processing-dot"
+                  ? "processing"
                   : ""
               }`}
             />
 
             {loading
               ? "PROCESSING"
-              : listening
-              ? "LISTENING"
               : "ONLINE"}
           </div>
         </div>
 
         <button
+          type="button"
           className={`voice-toggle ${
-            voiceOn ? "active" : ""
+            voiceOn
+              ? "active"
+              : ""
           }`}
           onClick={() =>
             setVoiceOn(
-              (value) => !value
+              (value) =>
+                !value
             )
           }
-          type="button"
         >
           VOICE{" "}
-          {voiceOn ? "ON" : "OFF"}
+          {voiceOn
+            ? "ON"
+            : "OFF"}
         </button>
       </header>
 
-      {/* ---------------------------------------------------
-          THE NEW JARVIS REACTOR
-      --------------------------------------------------- */}
+      {/* ENERGY CORE */}
 
       <div className="core-stage">
         <EnergyCore
-          active={loading}
-          listening={listening}
+          thinking={loading}
         />
       </div>
 
-      {/* ---------------------------------------------------
-          Chat
-      --------------------------------------------------- */}
+      {/* CHAT */}
 
       <section
         className="log"
@@ -1168,8 +1223,10 @@ export default function Home() {
         {messages.map(
           (message, index) => (
             <div
-              key={`${index}-${message.role}`}
-              className={`msg-row ${message.role}`}
+              key={index}
+              className={`msg-row ${
+                message.role
+              }`}
             >
               <div className="msg-label">
                 {message.role ===
@@ -1206,55 +1263,58 @@ export default function Home() {
         )}
       </section>
 
-      {/* ---------------------------------------------------
-          Input
-      --------------------------------------------------- */}
+      {/* INPUT */}
 
-      <div className="input-bar">
+      <footer className="input-bar">
         <button
+          type="button"
           className={`icon-btn mic ${
             listening
               ? "listening"
               : ""
           }`}
           onClick={toggleMic}
-          type="button"
           title="Voice input"
           aria-label="Voice input"
         >
-          <span className="mic-symbol">
-            🎙
-          </span>
+          🎙
         </button>
 
         <input
           value={input}
           onChange={(event) =>
-            setInput(event.target.value)
+            setInput(
+              event.target.value
+            )
           }
-          onKeyDown={
-            handleInputKeyDown
-          }
+          onKeyDown={(event) => {
+            if (
+              event.key ===
+              "Enter"
+            ) {
+              event.preventDefault();
+              sendMessage();
+            }
+          }}
           placeholder="Speak, and I shall listen..."
           disabled={loading}
-          autoComplete="off"
-          spellCheck="false"
+          aria-label="Message JARVIS"
         />
 
         <button
+          type="button"
           className="icon-btn send"
           onClick={sendMessage}
           disabled={
             loading ||
             !input.trim()
           }
-          type="button"
           title="Send"
-          aria-label="Send message"
+          aria-label="Send"
         >
           ➤
         </button>
-      </div>
+      </footer>
     </main>
   );
 }
