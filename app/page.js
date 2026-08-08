@@ -2,186 +2,183 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/* =========================================================
-   BOOT SEQUENCE
-========================================================= */
-
 const BOOT_LINES = [
   { text: "INITIALIZING J.A.R.V.I.S. CORE...", dim: false },
-  { text: "loading neural interface", dim: true },
-  { text: "calibrating voice interface", dim: true },
-  { text: "establishing secure connection", dim: true },
+  { text: "LOADING NEURAL INTERFACE", dim: true },
+  { text: "CALIBRATING VOICE SYSTEM", dim: true },
+  { text: "ENERGY CORE ONLINE", dim: false },
   { text: "ALL SYSTEMS NOMINAL", dim: false },
 ];
 
 /* =========================================================
-   JARVIS REACTOR
+   HOLOGRAPHIC JARVIS CORE
+   Canvas renderer — no external libraries required
 ========================================================= */
 
 function JarvisCore({ thinking }) {
   const canvasRef = useRef(null);
-  const thinkingRef = useRef(thinking);
-
-  useEffect(() => {
-    thinkingRef.current = thinking;
-  }, [thinking]);
+  const animationRef = useRef(null);
+  const stateRef = useRef({
+    width: 0,
+    height: 0,
+    dpr: 1,
+    time: 0,
+    particles: [],
+    stars: [],
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
-
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", {
+      alpha: true,
+      desynchronized: true,
+    });
 
     if (!ctx) return;
 
-    let animationFrame;
-    let width = 0;
-    let height = 0;
-    let dpr = 1;
+    const state = stateRef.current;
 
-    let particles = [];
-    let rays = [];
-    let orbitParticles = [];
+    /* -----------------------------
+       deterministic random
+    ----------------------------- */
 
-    let time = 0;
+    let seed = 938472;
 
-    /* -------------------------------------------------------
-       Utility
-    ------------------------------------------------------- */
+    function random() {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    }
 
-    const random = (min, max) => {
-      return Math.random() * (max - min) + min;
-    };
-
-    /* -------------------------------------------------------
-       Resize canvas
-    ------------------------------------------------------- */
+    /* -----------------------------
+       resize
+    ----------------------------- */
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
 
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      state.width = rect.width;
+      state.height = rect.height;
 
-      width = rect.width;
-      height = rect.height;
+      canvas.width = Math.floor(rect.width * state.dpr);
+      canvas.height = Math.floor(rect.height * state.dpr);
 
-      canvas.width = Math.floor(width * dpr);
-      canvas.height = Math.floor(height * dpr);
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      createParticles();
-      createRays();
-      createOrbitParticles();
+      ctx.setTransform(
+        state.dpr,
+        0,
+        0,
+        state.dpr,
+        0,
+        0
+      );
     }
 
-    /* -------------------------------------------------------
-       PARTICLES
-    ------------------------------------------------------- */
+    resize();
 
-    function createParticles() {
-      particles = [];
+    window.addEventListener("resize", resize);
 
-      const count = window.innerWidth < 600 ? 330 : 500;
+    /* -----------------------------
+       particle creation
+    ----------------------------- */
 
-      for (let i = 0; i < count; i++) {
-        const angle = random(0, Math.PI * 2);
+    const PARTICLE_COUNT = 950;
+    const STAR_COUNT = 160;
 
-        /*
-          More particles around the core,
-          fewer particles further away.
-        */
-        const radius =
-          Math.pow(Math.random(), 0.55) *
-          Math.min(width, height) *
-          random(0.23, 0.43);
+    state.particles = [];
+    state.stars = [];
 
-        particles.push({
-          angle,
-          radius,
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const theta = random() * Math.PI * 2;
+      const phi = Math.acos(2 * random() - 1);
 
-          size: random(0.5, 2.1),
+      const radius =
+        0.18 +
+        Math.pow(random(), 0.55) * 0.82;
 
-          alpha: random(0.25, 0.95),
+      state.particles.push({
+        theta,
+        phi,
+        radius,
 
-          speed: random(-0.0008, 0.0008),
+        size:
+          0.35 +
+          Math.pow(random(), 2) * 1.7,
 
-          wobble: random(0.5, 2.5),
+        alpha:
+          0.12 +
+          random() * 0.72,
 
-          wobbleSpeed: random(0.001, 0.004),
+        speed:
+          0.08 +
+          random() * 0.5,
 
-          phase: random(0, Math.PI * 2),
+        drift:
+          (random() - 0.5) * 0.8,
 
-          elongation: random(0.65, 1.3),
-        });
-      }
+        phase: random() * Math.PI * 2,
+
+        layer: random(),
+      });
     }
 
-    /* -------------------------------------------------------
-       ENERGY RAYS
-    ------------------------------------------------------- */
-
-    function createRays() {
-      rays = [];
-
-      const count = window.innerWidth < 600 ? 55 : 80;
-
-      for (let i = 0; i < count; i++) {
-        rays.push({
-          angle: random(0, Math.PI * 2),
-
-          length: random(
-            Math.min(width, height) * 0.15,
-            Math.min(width, height) * 0.42
-          ),
-
-          width: random(0.4, 1.8),
-
-          alpha: random(0.05, 0.35),
-
-          speed: random(-0.002, 0.002),
-
-          phase: random(0, Math.PI * 2),
-
-          flicker: random(0.5, 2.5),
-        });
-      }
+    for (let i = 0; i < STAR_COUNT; i++) {
+      state.stars.push({
+        angle: random() * Math.PI * 2,
+        distance: 0.85 + random() * 0.65,
+        size: 0.4 + random() * 1.3,
+        alpha: 0.15 + random() * 0.5,
+        speed: (random() - 0.5) * 0.15,
+      });
     }
 
-    /* -------------------------------------------------------
-       ORBIT PARTICLES
-    ------------------------------------------------------- */
+    /* -----------------------------
+       helpers
+    ----------------------------- */
 
-    function createOrbitParticles() {
-      orbitParticles = [];
+    function projectParticle(p, t) {
+      const spin = t * (thinking ? 0.0009 : 0.00025);
 
-      const count = window.innerWidth < 600 ? 180 : 260;
+      let theta = p.theta + spin * p.speed;
 
-      for (let i = 0; i < count; i++) {
-        const orbit = Math.floor(random(0, 5));
+      const x3 =
+        Math.sin(p.phi) *
+        Math.cos(theta) *
+        p.radius;
 
-        orbitParticles.push({
-          orbit,
+      const y3 =
+        Math.cos(p.phi) *
+        p.radius;
 
-          angle: random(0, Math.PI * 2),
+      const z3 =
+        Math.sin(p.phi) *
+        Math.sin(theta) *
+        p.radius;
 
-          speed: random(-0.012, 0.012),
+      // tilt the sphere
+      const tilt = -0.25;
 
-          size: random(0.4, 1.7),
+      const y =
+        y3 * Math.cos(tilt) -
+        z3 * Math.sin(tilt);
 
-          alpha: random(0.25, 0.85),
+      const z =
+        y3 * Math.sin(tilt) +
+        z3 * Math.cos(tilt);
 
-          phase: random(0, Math.PI * 2),
-        });
-      }
+      const perspective =
+        1 / (1.7 - z * 0.65);
+
+      return {
+        x: x3 * perspective,
+        y: y * perspective,
+        z,
+        scale: perspective,
+      };
     }
 
-    /* -------------------------------------------------------
-       GLOW
-    ------------------------------------------------------- */
-
-    function drawGlow(x, y, radius, intensity) {
+    function drawGlowCircle(x, y, radius, color, alpha) {
       const gradient = ctx.createRadialGradient(
         x,
         y,
@@ -191,556 +188,394 @@ function JarvisCore({ thinking }) {
         radius
       );
 
-      gradient.addColorStop(0, `rgba(255,255,240,${0.95 * intensity})`);
-
       gradient.addColorStop(
-        0.08,
-        `rgba(255,236,180,${0.9 * intensity})`
+        0,
+        `rgba(${color},${alpha})`
       );
 
       gradient.addColorStop(
-        0.22,
-        `rgba(255,166,50,${0.65 * intensity})`
+        0.25,
+        `rgba(${color},${alpha * 0.65})`
       );
 
       gradient.addColorStop(
-        0.48,
-        `rgba(255,103,10,${0.22 * intensity})`
+        0.65,
+        `rgba(${color},${alpha * 0.12})`
       );
 
       gradient.addColorStop(
         1,
-        "rgba(255,70,0,0)"
+        `rgba(${color},0)`
       );
 
       ctx.fillStyle = gradient;
 
       ctx.beginPath();
-
       ctx.arc(x, y, radius, 0, Math.PI * 2);
-
       ctx.fill();
     }
 
-    /* -------------------------------------------------------
-       ORBIT RINGS
-    ------------------------------------------------------- */
+    /* -----------------------------
+       main animation
+    ----------------------------- */
 
-    function drawOrbit(
-      cx,
-      cy,
-      rx,
-      ry,
-      rotation,
-      alpha,
-      dash,
-      lineWidth
-    ) {
-      ctx.save();
+    function render(timestamp) {
+      state.time = timestamp;
 
-      ctx.translate(cx, cy);
+      const w = state.width;
+      const h = state.height;
 
-      ctx.rotate(rotation);
-
-      ctx.beginPath();
-
-      ctx.ellipse(
-        0,
-        0,
-        rx,
-        ry,
-        0,
-        0,
-        Math.PI * 2
-      );
-
-      ctx.strokeStyle = `rgba(255,174,55,${alpha})`;
-
-      ctx.lineWidth = lineWidth;
-
-      if (dash) {
-        ctx.setLineDash(dash);
+      if (!w || !h) {
+        animationRef.current =
+          requestAnimationFrame(render);
+        return;
       }
 
-      ctx.stroke();
+      ctx.clearRect(0, 0, w, h);
 
-      ctx.restore();
-    }
+      const cx = w / 2;
+      const cy = h / 2;
 
-    /* -------------------------------------------------------
-       ENERGY WEB
-    ------------------------------------------------------- */
+      /*
+        Core size.
 
-    function drawEnergyWeb(cx, cy, baseRadius, intensity) {
-      const lines = thinkingRef.current ? 95 : 45;
+        This is deliberately large.
+        It is what makes the interface resemble
+        the reference images instead of a small
+        circular UI icon.
+      */
+
+      const base =
+        Math.min(w, h) *
+        (thinking ? 0.39 : 0.33);
+
+      /* -----------------------------
+         global glow
+      ----------------------------- */
 
       ctx.save();
 
-      for (let i = 0; i < lines; i++) {
-        const angle =
-          (i / lines) * Math.PI * 2 +
-          Math.sin(time * 0.0005 + i) * 0.04;
+      ctx.globalCompositeOperation = "lighter";
 
-        const inner = baseRadius * random(0.12, 0.35);
+      drawGlowCircle(
+        cx,
+        cy,
+        base * 1.65,
+        "255,92,8",
+        thinking ? 0.18 : 0.10
+      );
+
+      drawGlowCircle(
+        cx,
+        cy,
+        base * 1.05,
+        "255,153,45",
+        thinking ? 0.23 : 0.14
+      );
+
+      /* -----------------------------
+         radial energy beams
+      ----------------------------- */
+
+      const rayCount = thinking ? 110 : 58;
+
+      for (let i = 0; i < rayCount; i++) {
+        const angle =
+          (i / rayCount) *
+            Math.PI *
+            2 +
+          Math.sin(i * 7.31) * 0.18;
+
+        const inner =
+          base *
+          (0.45 + Math.sin(i * 3.7) * 0.08);
 
         const outer =
-          baseRadius *
-          random(
-            thinkingRef.current ? 0.85 : 0.62,
-            thinkingRef.current ? 1.55 : 1.05
+          base *
+          (1.15 +
+            Math.sin(i * 8.11) *
+              0.55 +
+            Math.random() * 0.03);
+
+        const x1 =
+          cx + Math.cos(angle) * inner;
+
+        const y1 =
+          cy + Math.sin(angle) * inner;
+
+        const x2 =
+          cx + Math.cos(angle) * outer;
+
+        const y2 =
+          cy + Math.sin(angle) * outer;
+
+        const gradient =
+          ctx.createLinearGradient(
+            x1,
+            y1,
+            x2,
+            y2
           );
 
-        const x1 = cx + Math.cos(angle) * inner;
-
-        const y1 = cy + Math.sin(angle) * inner;
-
-        const x2 = cx + Math.cos(angle) * outer;
-
-        const y2 = cy + Math.sin(angle) * outer;
-
-        const alpha =
-          random(0.025, thinkingRef.current ? 0.22 : 0.09) *
-          intensity;
-
-        ctx.beginPath();
-
-        ctx.moveTo(x1, y1);
-
-        /*
-          Slightly bent energy lines
-        */
-
-        const bend =
-          Math.sin(time * 0.002 + i * 1.7) *
-          baseRadius *
-          0.12;
-
-        const midX =
-          cx +
-          Math.cos(angle + 0.4) * bend;
-
-        const midY =
-          cy +
-          Math.sin(angle + 0.4) * bend;
-
-        ctx.quadraticCurveTo(
-          midX,
-          midY,
-          x2,
-          y2
+        gradient.addColorStop(
+          0,
+          "rgba(255,255,210,0.55)"
         );
 
-        ctx.strokeStyle = `rgba(255,120,20,${alpha})`;
+        gradient.addColorStop(
+          0.2,
+          "rgba(255,180,65,0.28)"
+        );
 
-        ctx.lineWidth = random(0.3, 1.3);
+        gradient.addColorStop(
+          1,
+          "rgba(255,80,0,0)"
+        );
 
+        ctx.strokeStyle = gradient;
+
+        ctx.lineWidth =
+          thinking
+            ? 0.6 + Math.random() * 1.5
+            : 0.35 + Math.random() * 0.8;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
         ctx.stroke();
       }
 
-      ctx.restore();
-    }
+      /* -----------------------------
+         orbital rings
+      ----------------------------- */
 
-    /* -------------------------------------------------------
-       PARTICLES
-    ------------------------------------------------------- */
+      const ringRotation =
+        timestamp *
+        (thinking ? 0.00035 : 0.00008);
 
-    function drawParticles(cx, cy, baseRadius) {
-      ctx.save();
+      for (let ring = 0; ring < 7; ring++) {
+        const radius =
+          base *
+          (0.48 + ring * 0.105);
 
-      for (const p of particles) {
-        const speedMultiplier = thinkingRef.current ? 2.8 : 1;
+        ctx.save();
 
-        p.angle += p.speed * speedMultiplier;
+        ctx.translate(cx, cy);
 
-        const wobble =
-          Math.sin(
-            time * p.wobbleSpeed +
-              p.phase
-          ) *
-          p.wobble;
+        ctx.rotate(
+          ringRotation *
+            (ring % 2 === 0 ? 1 : -1)
+        );
 
-        const radius = p.radius + wobble;
+        ctx.rotate(
+          ring * 0.45
+        );
 
-        const x =
+        ctx.scale(
+          1,
+          0.35 + ring * 0.055
+        );
+
+        ctx.beginPath();
+
+        ctx.arc(
+          0,
+          0,
+          radius,
+          0,
+          Math.PI * 2
+        );
+
+        ctx.strokeStyle =
+          ring % 2 === 0
+            ? "rgba(255,170,65,0.38)"
+            : "rgba(255,210,125,0.22)";
+
+        ctx.lineWidth =
+          ring === 0
+            ? 1.4
+            : 0.65;
+
+        ctx.setLineDash(
+          ring % 3 === 0
+            ? [2, 8]
+            : [1, 4]
+        );
+
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      /* -----------------------------
+         dense particle sphere
+      ----------------------------- */
+
+      const projected = [];
+
+      for (const p of state.particles) {
+        const point =
+          projectParticle(
+            p,
+            timestamp
+          );
+
+        const px =
           cx +
-          Math.cos(p.angle) *
-            radius *
-            p.elongation;
+          point.x * base;
 
-        const y =
+        const py =
           cy +
-          Math.sin(p.angle) *
-            radius;
+          point.y * base;
+
+        projected.push({
+          ...p,
+          ...point,
+          px,
+          py,
+        });
+      }
+
+      projected.sort(
+        (a, b) => a.z - b.z
+      );
+
+      for (const p of projected) {
+        const depth =
+          (p.z + 1) / 2;
 
         const pulse =
-          0.65 +
+          0.75 +
           Math.sin(
-            time * 0.003 +
+            timestamp * 0.0025 +
               p.phase
           ) *
-            0.35;
+            0.25;
 
         const alpha =
           p.alpha *
-          pulse *
-          (thinkingRef.current ? 1.25 : 0.8);
+          (0.25 + depth * 0.9) *
+          pulse;
+
+        if (alpha <= 0.01) continue;
+
+        const size =
+          p.size *
+          p.scale *
+          (thinking ? 1.35 : 1);
+
+        ctx.fillStyle =
+          `rgba(255,${
+            120 +
+            Math.floor(
+              depth * 100
+            )
+          },${
+            35 +
+            Math.floor(
+              depth * 60
+            )
+          },${alpha})`;
 
         ctx.beginPath();
 
         ctx.arc(
-          x,
-          y,
-          p.size *
-            (thinkingRef.current ? 1.25 : 1),
+          p.px,
+          p.py,
+          size,
           0,
           Math.PI * 2
         );
 
-        ctx.fillStyle = `rgba(255,190,90,${Math.min(
-          alpha,
-          1
-        )})`;
-
         ctx.fill();
       }
 
-      ctx.restore();
-    }
+      /* -----------------------------
+         random orbit fragments
+      ----------------------------- */
 
-    /* -------------------------------------------------------
-       ORBITING PARTICLES
-    ------------------------------------------------------- */
+      const fragments =
+        thinking ? 80 : 42;
 
-    function drawOrbitParticles(cx, cy, baseRadius) {
-      ctx.save();
+      for (
+        let i = 0;
+        i < fragments;
+        i++
+      ) {
+        const angle =
+          i * 2.39996 +
+          timestamp *
+            0.00015 *
+            (i % 2 ? -1 : 1);
 
-      for (const p of orbitParticles) {
-        const speedMultiplier =
-          thinkingRef.current ? 3.2 : 1;
+        const distance =
+          base *
+          (0.7 +
+            Math.sin(i * 8.2) *
+              0.35 +
+            ((i * 17) % 100) /
+              160);
 
-        p.angle +=
-          p.speed *
-          speedMultiplier;
-
-        const orbitConfigs = [
-          {
-            rx: baseRadius * 0.38,
-            ry: baseRadius * 0.16,
-            rotation: -0.4,
-          },
-          {
-            rx: baseRadius * 0.48,
-            ry: baseRadius * 0.22,
-            rotation: 0.9,
-          },
-          {
-            rx: baseRadius * 0.55,
-            ry: baseRadius * 0.13,
-            rotation: -1.1,
-          },
-          {
-            rx: baseRadius * 0.67,
-            ry: baseRadius * 0.3,
-            rotation: 0.25,
-          },
-          {
-            rx: baseRadius * 0.78,
-            ry: baseRadius * 0.17,
-            rotation: 1.25,
-          },
-        ];
-
-        const orbit = orbitConfigs[p.orbit];
-
-        const cos = Math.cos(p.angle);
-
-        const sin = Math.sin(p.angle);
-
-        let x =
-          cos * orbit.rx;
-
-        let y =
-          sin * orbit.ry;
-
-        const rotatedX =
-          x * Math.cos(orbit.rotation) -
-          y * Math.sin(orbit.rotation);
-
-        const rotatedY =
-          x * Math.sin(orbit.rotation) +
-          y * Math.cos(orbit.rotation);
-
-        x = cx + rotatedX;
-
-        y = cy + rotatedY;
-
-        const pulse =
-          0.5 +
-          Math.sin(
-            time * 0.004 +
-              p.phase
-          ) *
-            0.5;
-
-        ctx.beginPath();
-
-        ctx.arc(
-          x,
-          y,
-          p.size *
-            (thinkingRef.current ? 1.4 : 1),
-          0,
-          Math.PI * 2
-        );
-
-        ctx.fillStyle = `rgba(255,205,120,${
-          p.alpha * pulse
-        })`;
-
-        ctx.fill();
-      }
-
-      ctx.restore();
-    }
-
-    /* -------------------------------------------------------
-       RANDOM HOT STREAKS
-    ------------------------------------------------------- */
-
-    function drawRays(cx, cy, baseRadius) {
-      ctx.save();
-
-      for (const r of rays) {
-        r.angle +=
-          r.speed *
-          (thinkingRef.current ? 4 : 1);
-
-        const flicker =
-          0.5 +
-          Math.sin(
-            time * 0.004 * r.flicker
-          ) *
-            0.5;
-
-        const start =
-          baseRadius *
-          random(0.12, 0.25);
-
-        const multiplier =
-          thinkingRef.current ? 1.45 : 0.9;
-
-        const end =
-          r.length *
-          multiplier;
-
-        const x1 =
+        const x =
           cx +
-          Math.cos(r.angle) *
-            start;
+          Math.cos(angle) *
+            distance;
 
-        const y1 =
+        const y =
           cy +
-          Math.sin(r.angle) *
-            start;
+          Math.sin(angle) *
+            distance *
+            (0.55 +
+              Math.sin(i) * 0.15);
 
-        const x2 =
-          cx +
-          Math.cos(r.angle) *
-            end;
+        const length =
+          4 +
+          ((i * 13) % 24);
 
-        const y2 =
-          cy +
-          Math.sin(r.angle) *
-            end;
-
-        ctx.beginPath();
-
-        ctx.moveTo(x1, y1);
-
-        ctx.lineTo(x2, y2);
-
-        ctx.strokeStyle = `rgba(255,125,20,${
-          r.alpha * flicker
-        })`;
+        ctx.strokeStyle =
+          `rgba(255,${140 + (i % 90)},55,${
+            0.12 +
+            (i % 5) * 0.06
+          })`;
 
         ctx.lineWidth =
-          r.width *
-          (thinkingRef.current ? 1.5 : 0.8);
+          0.5 +
+          (i % 3) * 0.4;
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+          x - Math.cos(angle) * length,
+          y - Math.sin(angle) * length
+        );
+
+        ctx.lineTo(
+          x + Math.cos(angle) * length,
+          y + Math.sin(angle) * length
+        );
 
         ctx.stroke();
       }
 
-      ctx.restore();
-    }
+      /* -----------------------------
+         hot center
+      ----------------------------- */
 
-    /* -------------------------------------------------------
-       MAIN DRAW
-    ------------------------------------------------------- */
-
-    function draw() {
-      time += 16;
-
-      ctx.clearRect(
-        0,
-        0,
-        width,
-        height
-      );
-
-      const cx = width / 2;
-
-      const cy = height / 2;
-
-      const baseRadius =
-        Math.min(width, height) *
-        0.38;
-
-      const thinkingMultiplier =
-        thinkingRef.current ? 1.12 : 1;
-
-      /* -----------------------------------------------
-         Outer ambient glow
-      ------------------------------------------------ */
-
-      drawGlow(
+      drawGlowCircle(
         cx,
         cy,
-        baseRadius * 1.65,
-        thinkingRef.current ? 0.75 : 0.42
+        base * 0.48,
+        "255,80,0",
+        thinking ? 0.45 : 0.30
       );
 
-      /* -----------------------------------------------
-         Energy web
-      ------------------------------------------------ */
-
-      drawEnergyWeb(
+      drawGlowCircle(
         cx,
         cy,
-        baseRadius,
-        thinkingRef.current ? 1.5 : 1
+        base * 0.31,
+        "255,170,60",
+        thinking ? 0.75 : 0.55
       );
-
-      /* -----------------------------------------------
-         Long energy rays
-      ------------------------------------------------ */
-
-      drawRays(
-        cx,
-        cy,
-        baseRadius
-      );
-
-      /* -----------------------------------------------
-         Outer particles
-      ------------------------------------------------ */
-
-      drawParticles(
-        cx,
-        cy,
-        baseRadius
-      );
-
-      /* -----------------------------------------------
-         Orbit particles
-      ------------------------------------------------ */
-
-      drawOrbitParticles(
-        cx,
-        cy,
-        baseRadius
-      );
-
-      /* -----------------------------------------------
-         Orbit rings
-      ------------------------------------------------ */
-
-      const rotation1 =
-        time *
-        0.00035 *
-        (thinkingRef.current ? 4 : 1);
-
-      const rotation2 =
-        -time *
-        0.00023 *
-        (thinkingRef.current ? 4 : 1);
-
-      const rotation3 =
-        time *
-        0.00052 *
-        (thinkingRef.current ? 3 : 1);
-
-      drawOrbit(
-        cx,
-        cy,
-        baseRadius * 0.95,
-        baseRadius * 0.34,
-        rotation1,
-        0.45,
-        null,
-        1.2
-      );
-
-      drawOrbit(
-        cx,
-        cy,
-        baseRadius * 0.72,
-        baseRadius * 0.22,
-        rotation2,
-        0.55,
-        [5, 9],
-        1.1
-      );
-
-      drawOrbit(
-        cx,
-        cy,
-        baseRadius * 0.58,
-        baseRadius * 0.75,
-        rotation3,
-        0.38,
-        null,
-        1
-      );
-
-      drawOrbit(
-        cx,
-        cy,
-        baseRadius * 0.48,
-        baseRadius * 0.17,
-        -rotation1 * 1.8,
-        0.3,
-        [2, 7],
-        0.8
-      );
-
-      /* -----------------------------------------------
-         Inner glow
-      ------------------------------------------------ */
-
-      const pulse =
-        1 +
-        Math.sin(time * 0.003) *
-          0.08;
-
-      drawGlow(
-        cx,
-        cy,
-        baseRadius *
-          0.42 *
-          pulse *
-          thinkingMultiplier,
-        thinkingRef.current ? 1.25 : 0.9
-      );
-
-      /* -----------------------------------------------
-         White hot center
-      ------------------------------------------------ */
-
-      const coreRadius =
-        baseRadius *
-        (thinkingRef.current
-          ? 0.19
-          : 0.15);
 
       const coreGradient =
         ctx.createRadialGradient(
@@ -749,7 +584,7 @@ function JarvisCore({ thinking }) {
           0,
           cx,
           cy,
-          coreRadius
+          base * 0.24
         );
 
       coreGradient.addColorStop(
@@ -758,105 +593,95 @@ function JarvisCore({ thinking }) {
       );
 
       coreGradient.addColorStop(
-        0.22,
-        "rgba(255,247,216,1)"
+        0.16,
+        "rgba(255,248,210,1)"
       );
 
       coreGradient.addColorStop(
-        0.48,
-        "rgba(255,186,80,0.95)"
+        0.42,
+        "rgba(255,214,125,0.98)"
       );
 
       coreGradient.addColorStop(
         0.72,
-        "rgba(255,91,0,0.55)"
+        "rgba(255,130,20,0.65)"
       );
 
       coreGradient.addColorStop(
         1,
-        "rgba(255,70,0,0)"
+        "rgba(255,50,0,0)"
       );
 
-      ctx.fillStyle = coreGradient;
+      ctx.fillStyle =
+        coreGradient;
 
       ctx.beginPath();
 
       ctx.arc(
         cx,
         cy,
-        coreRadius,
+        base * 0.24,
         0,
         Math.PI * 2
       );
 
       ctx.fill();
 
-      /* -----------------------------------------------
-         White center
-      ------------------------------------------------ */
+      /* bright central nucleus */
+
+      ctx.fillStyle =
+        "rgba(255,255,245,0.98)";
+
+      ctx.shadowBlur =
+        thinking ? 45 : 30;
+
+      ctx.shadowColor =
+        "rgba(255,150,50,0.95)";
 
       ctx.beginPath();
 
       ctx.arc(
         cx,
         cy,
-        coreRadius * 0.32,
+        base *
+          (thinking ? 0.075 : 0.065),
         0,
         Math.PI * 2
       );
-
-      ctx.fillStyle =
-        "rgba(255,255,255,0.92)";
-
-      ctx.shadowColor =
-        "rgba(255,180,70,0.9)";
-
-      ctx.shadowBlur =
-        thinkingRef.current
-          ? 35
-          : 22;
 
       ctx.fill();
 
       ctx.shadowBlur = 0;
 
-      animationFrame =
-        requestAnimationFrame(draw);
+      ctx.restore();
+
+      animationRef.current =
+        requestAnimationFrame(render);
     }
 
-    resize();
-
-    window.addEventListener(
-      "resize",
-      resize
-    );
-
-    animationFrame =
-      requestAnimationFrame(draw);
+    animationRef.current =
+      requestAnimationFrame(render);
 
     return () => {
+      cancelAnimationFrame(
+        animationRef.current
+      );
+
       window.removeEventListener(
         "resize",
         resize
       );
-
-      cancelAnimationFrame(
-        animationFrame
-      );
     };
-  }, []);
+  }, [thinking]);
 
   return (
-    <div
-      className={`jarvis-core ${
+    <canvas
+      ref={canvasRef}
+      className={`jarvis-canvas ${
         thinking ? "thinking" : ""
       }`}
-    >
-      <canvas
-        ref={canvasRef}
-        aria-hidden="true"
-      />
-    </div>
+      aria-hidden="true"
+    />
   );
 }
 
@@ -868,10 +693,8 @@ export default function Home() {
   const [booted, setBooted] =
     useState(false);
 
-  const [
-    visibleBootLines,
-    setVisibleBootLines,
-  ] = useState(0);
+  const [visibleBootLines, setVisibleBootLines] =
+    useState(0);
 
   const [messages, setMessages] =
     useState([
@@ -900,9 +723,12 @@ export default function Home() {
   const recognitionRef =
     useRef(null);
 
-  /* -------------------------------------------------------
-     BOOT
-  ------------------------------------------------------- */
+  const audioRef =
+    useRef(null);
+
+  /* -----------------------------
+     boot
+  ----------------------------- */
 
   useEffect(() => {
     if (
@@ -914,40 +740,39 @@ export default function Home() {
           setVisibleBootLines(
             (n) => n + 1
           );
-        }, 350);
+        }, 300);
 
       return () =>
         clearTimeout(timer);
     }
 
     const timer =
-      setTimeout(() => {
-        setBooted(true);
-      }, 600);
+      setTimeout(
+        () => setBooted(true),
+        450
+      );
 
     return () =>
       clearTimeout(timer);
   }, [visibleBootLines]);
 
-  /* -------------------------------------------------------
-     AUTO SCROLL
-  ------------------------------------------------------- */
+  /* -----------------------------
+     chat scrolling
+  ----------------------------- */
 
   useEffect(() => {
-    const log =
-      logRef.current;
+    if (!logRef.current) return;
 
-    if (!log) return;
-
-    log.scrollTo({
-      top: log.scrollHeight,
+    logRef.current.scrollTo({
+      top:
+        logRef.current.scrollHeight,
       behavior: "smooth",
     });
   }, [messages, loading]);
 
-  /* -------------------------------------------------------
-     SPEECH RECOGNITION
-  ------------------------------------------------------- */
+  /* -----------------------------
+     speech recognition
+  ----------------------------- */
 
   useEffect(() => {
     if (
@@ -969,28 +794,22 @@ export default function Home() {
       new SpeechRecognition();
 
     recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
 
-    recognition.interimResults =
-      false;
-
-    recognition.lang =
-      "en-US";
-
-    recognition.onresult = (
-      event
-    ) => {
-      const transcript =
-        event.results?.[0]?.[0]
-          ?.transcript;
-
-      if (transcript) {
-        setInput(transcript);
-      }
+    recognition.onstart = () => {
+      setListening(true);
     };
 
-    recognition.onerror = (
-      event
-    ) => {
+    recognition.onresult = (event) => {
+      const transcript =
+        event.results[0][0]
+          .transcript;
+
+      setInput(transcript);
+    };
+
+    recognition.onerror = (event) => {
       setListening(false);
 
       if (
@@ -1000,15 +819,7 @@ export default function Home() {
           "service-not-allowed"
       ) {
         alert(
-          "Microphone access was blocked. Please allow microphone access for this website."
-        );
-      } else if (
-        event.error !==
-        "no-speech"
-      ) {
-        console.error(
-          "Speech recognition error:",
-          event.error
+          "Microphone access was blocked. Allow microphone access for this website and try again."
         );
       }
     };
@@ -1027,9 +838,9 @@ export default function Home() {
     };
   }, []);
 
-  /* -------------------------------------------------------
-     MICROPHONE
-  ------------------------------------------------------- */
+  /* -----------------------------
+     microphone
+  ----------------------------- */
 
   function toggleMic() {
     const recognition =
@@ -1037,7 +848,7 @@ export default function Home() {
 
     if (!recognition) {
       alert(
-        "Voice input is not supported by this browser. Please try Chrome or another browser with Speech Recognition support."
+        "Voice input is not supported by this browser. Try Chrome or Edge."
       );
 
       return;
@@ -1049,33 +860,33 @@ export default function Home() {
       } catch {}
 
       setListening(false);
-
       return;
     }
 
     try {
       recognition.start();
       setListening(true);
-    } catch (error) {
-      console.error(
-        "Could not start microphone:",
-        error
-      );
-
+    } catch {
       setListening(false);
     }
   }
 
-  /* -------------------------------------------------------
-     TEXT TO SPEECH
-  ------------------------------------------------------- */
+  /* -----------------------------
+     voice output
+  ----------------------------- */
 
   async function speak(text) {
-    if (!voiceOn || !text) {
-      return;
-    }
+    if (!voiceOn) return;
 
     try {
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch {}
+
+        audioRef.current = null;
+      }
+
       const response =
         await fetch(
           "/api/speak",
@@ -1100,7 +911,7 @@ export default function Home() {
         console.error(
           "Voice playback failed:",
           data?.error ||
-            `HTTP ${response.status}`
+            response.status
         );
 
         return;
@@ -1109,24 +920,23 @@ export default function Home() {
       const blob =
         await response.blob();
 
-      const audioUrl =
-        URL.createObjectURL(
-          blob
-        );
+      const url =
+        URL.createObjectURL(blob);
 
       const audio =
-        new Audio(audioUrl);
+        new Audio(url);
+
+      audioRef.current = audio;
 
       audio.onended = () => {
-        URL.revokeObjectURL(
-          audioUrl
-        );
-      };
+        URL.revokeObjectURL(url);
 
-      audio.onerror = () => {
-        URL.revokeObjectURL(
-          audioUrl
-        );
+        if (
+          audioRef.current ===
+          audio
+        ) {
+          audioRef.current = null;
+        }
       };
 
       await audio.play();
@@ -1138,18 +948,15 @@ export default function Home() {
     }
   }
 
-  /* -------------------------------------------------------
-     SEND MESSAGE
-  ------------------------------------------------------- */
+  /* -----------------------------
+     send message
+  ----------------------------- */
 
   async function sendMessage() {
     const text =
       input.trim();
 
-    if (
-      !text ||
-      loading
-    ) {
+    if (!text || loading) {
       return;
     }
 
@@ -1161,12 +968,8 @@ export default function Home() {
       },
     ];
 
-    setMessages(
-      nextMessages
-    );
-
+    setMessages(nextMessages);
     setInput("");
-
     setLoading(true);
 
     try {
@@ -1209,27 +1012,8 @@ export default function Home() {
       }
 
       const reply =
-        data?.reply;
-
-      if (
-        typeof reply !==
-          "string" ||
-        !reply.trim()
-      ) {
-        setMessages(
-          (current) => [
-            ...current,
-            {
-              role: "assistant",
-              content:
-                "I received an empty response from the server.",
-              error: true,
-            },
-          ]
-        );
-
-        return;
-      }
+        data?.reply ||
+        "I received your request, but no response was returned.";
 
       setMessages(
         (current) => [
@@ -1241,12 +1025,9 @@ export default function Home() {
         ]
       );
 
-      speak(reply);
+      await speak(reply);
     } catch (error) {
-      console.error(
-        "Chat request failed:",
-        error
-      );
+      console.error(error);
 
       setMessages(
         (current) => [
@@ -1254,7 +1035,7 @@ export default function Home() {
           {
             role: "assistant",
             content:
-              "I couldn't reach the server. Please check your connection and try again.",
+              "I couldn't reach the server. Check your connection and try again.",
             error: true,
           },
         ]
@@ -1264,9 +1045,9 @@ export default function Home() {
     }
   }
 
-  /* -------------------------------------------------------
-     ENTER KEY
-  ------------------------------------------------------- */
+  /* -----------------------------
+     keyboard
+  ----------------------------- */
 
   function handleKeyDown(event) {
     if (
@@ -1274,52 +1055,55 @@ export default function Home() {
       !event.shiftKey
     ) {
       event.preventDefault();
-
       sendMessage();
     }
   }
 
-  /* -------------------------------------------------------
-     BOOT SCREEN
-  ------------------------------------------------------- */
+  /* -----------------------------
+     boot screen
+  ----------------------------- */
 
   if (!booted) {
     return (
-      <div className="boot-screen">
-        {BOOT_LINES.slice(
-          0,
-          visibleBootLines
-        ).map((line, index) => (
-          <div
-            key={index}
-            className={`boot-line ${
-              line.dim
-                ? "dim"
-                : ""
-            }`}
-          >
-            {line.text}
-          </div>
-        ))}
-      </div>
+      <main className="boot-screen">
+        <div className="boot-core">
+          <div className="boot-core-dot" />
+        </div>
+
+        <div className="boot-lines">
+          {BOOT_LINES.slice(
+            0,
+            visibleBootLines
+          ).map((line, index) => (
+            <div
+              key={index}
+              className={`boot-line ${
+                line.dim
+                  ? "dim"
+                  : ""
+              }`}
+            >
+              {line.text}
+            </div>
+          ))}
+        </div>
+      </main>
     );
   }
 
-  /* -------------------------------------------------------
-     APPLICATION
-  ------------------------------------------------------- */
-
   return (
-    <main className="app">
-      {/* HEADER */}
+    <main className="jarvis-app">
+      {/* --------------------------------
+          HEADER
+      -------------------------------- */}
 
-      <header className="header">
-        <div className="title-block">
+      <header className="jarvis-header">
+        <div className="brand">
           <div className="wordmark">
             J.A.R.V.I.S.
           </div>
 
-          <div className="status-line">
+          <div className="system-status">
             <span
               className={`status-dot ${
                 loading
@@ -1336,7 +1120,7 @@ export default function Home() {
 
         <button
           type="button"
-          className={`voice-toggle ${
+          className={`voice-button ${
             voiceOn
               ? "active"
               : ""
@@ -1348,6 +1132,7 @@ export default function Home() {
             )
           }
         >
+          <span className="voice-indicator" />
           VOICE{" "}
           {voiceOn
             ? "ON"
@@ -1355,85 +1140,91 @@ export default function Home() {
         </button>
       </header>
 
-      {/* REACTOR */}
+      {/* --------------------------------
+          ENERGY CORE
+      -------------------------------- */}
 
-      <div className="core-stage">
+      <section className="core-container">
         <JarvisCore
           thinking={loading}
         />
-      </div>
+      </section>
 
-      {/* CHAT */}
+      {/* --------------------------------
+          CHAT
+      -------------------------------- */}
 
       <section
-        className="log"
+        className="chat-log"
         ref={logRef}
         aria-live="polite"
       >
         {messages.map(
           (message, index) => (
-            <div
-              key={`${message.role}-${index}`}
-              className={`msg-row ${
+            <article
+              key={index}
+              className={`message ${
                 message.role
+              } ${
+                message.error
+                  ? "error"
+                  : ""
               }`}
             >
-              <div className="msg-label">
+              <div className="message-label">
                 {message.role ===
                 "user"
                   ? "YOU"
                   : "JARVIS"}
               </div>
 
-              <div
-                className={`bubble ${
-                  message.error
-                    ? "error"
-                    : ""
-                }`}
-              >
+              <div className="message-content">
                 {message.content}
               </div>
-            </div>
+            </article>
           )
         )}
 
         {loading && (
-          <div className="msg-row assistant">
-            <div className="msg-label">
+          <article className="message assistant">
+            <div className="message-label">
               JARVIS
             </div>
 
-            <div className="bubble thinking-row">
+            <div className="thinking-indicator">
+              <span />
               <span />
               <span />
               <span />
             </div>
-          </div>
+          </article>
         )}
       </section>
 
-      {/* INPUT */}
+      {/* --------------------------------
+          INPUT
+      -------------------------------- */}
 
-      <div className="input-area">
-        <div className="input-bar">
-          <button
-            type="button"
-            className={`icon-btn mic ${
-              listening
-                ? "listening"
-                : ""
-            }`}
-            onClick={toggleMic}
-            title="Voice input"
-            aria-label="Voice input"
-          >
-            <span className="mic-icon">
-              🎙
-            </span>
-          </button>
+      <footer className="input-area">
+        <button
+          type="button"
+          className={`control-button microphone ${
+            listening
+              ? "listening"
+              : ""
+          }`}
+          onClick={toggleMic}
+          aria-label="Voice input"
+          title="Voice input"
+        >
+          <span className="mic-icon">
+            🎙
+          </span>
+        </button>
 
+        <div className="input-wrapper">
           <input
+            type="text"
             value={input}
             onChange={(event) =>
               setInput(
@@ -1443,29 +1234,31 @@ export default function Home() {
             onKeyDown={
               handleKeyDown
             }
-            placeholder="Speak, and I shall listen..."
+            placeholder={
+              listening
+                ? "Listening..."
+                : "Speak, and I shall listen..."
+            }
             disabled={loading}
             autoComplete="off"
-            spellCheck="true"
+            spellCheck="false"
           />
-
-          <button
-            type="button"
-            className="icon-btn send"
-            onClick={
-              sendMessage
-            }
-            disabled={
-              loading ||
-              !input.trim()
-            }
-            title="Send"
-            aria-label="Send message"
-          >
-            ➤
-          </button>
         </div>
-      </div>
+
+        <button
+          type="button"
+          className="control-button send-button"
+          onClick={sendMessage}
+          disabled={
+            loading ||
+            !input.trim()
+          }
+          aria-label="Send message"
+          title="Send message"
+        >
+          ➤
+        </button>
+      </footer>
     </main>
   );
 }
