@@ -2,22 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/* =========================================================
-   BOOT
-========================================================= */
-
 const BOOT_LINES = [
   { text: "INITIALIZING J.A.R.V.I.S. CORE...", dim: false },
   { text: "loading language subsystem", dim: true },
   { text: "calibrating voice interface", dim: true },
   { text: "ALL SYSTEMS NOMINAL", dim: false },
 ];
-
-/* =========================================================
-   ENERGY REACTOR
-   Canvas is used instead of SVG because the reference is
-   intentionally chaotic and organic.
-========================================================= */
 
 function EnergyCore({ thinking }) {
   const canvasRef = useRef(null);
@@ -26,9 +16,9 @@ function EnergyCore({ thinking }) {
     width: 0,
     height: 0,
     dpr: 1,
-    filaments: [],
     particles: [],
     sparks: [],
+    time: 0,
   });
 
   useEffect(() => {
@@ -38,180 +28,66 @@ function EnergyCore({ thinking }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let mounted = true;
-
     const state = stateRef.current;
 
-    /* -----------------------------------------------------
-       Utilities
-    ----------------------------------------------------- */
-
-    const random = (min, max) => Math.random() * (max - min) + min;
-
-    const clamp = (value, min, max) =>
-      Math.max(min, Math.min(max, value));
-
-    /* -----------------------------------------------------
-       Create the reactor structure
-    ----------------------------------------------------- */
-
-    function createWorld() {
-      const base = Math.min(state.width, state.height);
-
-      /*
-        The reactor deliberately has no circular orbital
-        structure.
-
-        Instead we create:
-        - angular filaments
-        - fragmented energy trails
-        - particles
-        - small sparks
-      */
-
-      const filamentCount = Math.floor(
-        clamp(base / 2.6, 130, 250)
-      );
-
-      const particleCount = Math.floor(
-        clamp(base * 1.35, 700, 1800)
-      );
-
-      const sparkCount = Math.floor(
-        clamp(base / 2.5, 120, 260)
-      );
-
-      state.filaments = [];
-      state.particles = [];
-      state.sparks = [];
-
-      /* ---------------------------------------------------
-         FILAMENTS
-      --------------------------------------------------- */
-
-      for (let i = 0; i < filamentCount; i++) {
-        const angle = random(0, Math.PI * 2);
-
-        const startRadius = random(
-          base * 0.055,
-          base * 0.15
-        );
-
-        const length = random(
-          base * 0.10,
-          base * 0.43
-        );
-
-        const points = [];
-
-        let x = Math.cos(angle) * startRadius;
-        let y = Math.sin(angle) * startRadius;
-
-        let direction = angle + random(-0.7, 0.7);
-
-        const steps = Math.floor(random(4, 14));
-
-        for (let p = 0; p < steps; p++) {
-          /*
-            Angular movement rather than smooth curves.
-            This is what prevents the "solar system" look.
-          */
-
-          direction += random(-0.65, 0.65);
-
-          const stepLength =
-            length / steps * random(0.45, 1.25);
-
-          x += Math.cos(direction) * stepLength;
-          y += Math.sin(direction) * stepLength;
-
-          points.push({
-            x,
-            y,
-          });
-        }
-
-        state.filaments.push({
-          points,
-          angle,
-          speed: random(-0.0009, 0.0009),
-          rotation: random(-0.0015, 0.0015),
-          opacity: random(0.16, 0.62),
-          width: random(0.35, 1.35),
-          phase: random(0, Math.PI * 2),
-          flicker: random(0.6, 2.2),
-        });
-      }
-
-      /* ---------------------------------------------------
-         PARTICLE CLOUD
-      --------------------------------------------------- */
-
-      for (let i = 0; i < particleCount; i++) {
-        const angle = random(0, Math.PI * 2);
-
-        /*
-          sqrt creates a more natural area distribution.
-          We intentionally make the cloud irregular.
-        */
-
-        const radius =
-          Math.pow(Math.random(), 0.62) *
-          base *
-          random(0.16, 0.46);
-
-        const irregularity =
-          1 +
-          Math.sin(angle * random(3, 9)) *
-            random(0.04, 0.24);
-
-        state.particles.push({
-          angle,
-          radius: radius * irregularity,
-          size: random(0.35, 1.65),
-          opacity: random(0.12, 0.75),
-          speed: random(-0.002, 0.002),
-          drift: random(-0.18, 0.18),
-          phase: random(0, Math.PI * 2),
-        });
-      }
-
-      /* ---------------------------------------------------
-         SMALL ENERGY SPARKS
-      --------------------------------------------------- */
-
-      for (let i = 0; i < sparkCount; i++) {
-        const angle = random(0, Math.PI * 2);
-
-        const radius =
-          random(base * 0.12, base * 0.48);
-
-        state.sparks.push({
-          angle,
-          radius,
-          length: random(3, 22),
-          width: random(0.4, 1.1),
-          opacity: random(0.12, 0.65),
-          speed: random(-0.004, 0.004),
-          phase: random(0, Math.PI * 2),
-        });
-      }
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
     }
 
-    /* -----------------------------------------------------
-       RESIZE
-    ----------------------------------------------------- */
+    function createParticle() {
+      const angle = Math.random() * Math.PI * 2;
 
-    function resize() {
+      /*
+       * Instead of distributing particles on a circle,
+       * distribute them through a spherical-ish volume.
+       */
+      const radiusBias = Math.pow(Math.random(), 0.55);
+      const radius = radiusBias;
+
+      return {
+        angle,
+        radius,
+        depth: random(-1, 1),
+
+        speed: random(0.0007, 0.0025),
+        rotationSpeed: random(-0.004, 0.004),
+
+        size: random(0.6, 2.2),
+
+        phase: random(0, Math.PI * 2),
+        pulse: random(0.5, 1.8),
+
+        alpha: random(0.18, 0.85),
+
+        length: random(4, 18),
+
+        // Irregular angular movement.
+        wobble: random(0.002, 0.008),
+        wobbleOffset: random(0, 1000),
+      };
+    }
+
+    function createSpark() {
+      return {
+        angle: random(0, Math.PI * 2),
+        radius: random(0.22, 1.05),
+        speed: random(0.002, 0.008),
+        size: random(0.5, 1.8),
+        alpha: random(0.25, 0.9),
+        phase: random(0, Math.PI * 2),
+      };
+    }
+
+    function rebuild() {
       const rect = canvas.getBoundingClientRect();
+
+      state.dpr = Math.min(window.devicePixelRatio || 1, 2);
 
       state.width = rect.width;
       state.height = rect.height;
 
-      state.dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-      canvas.width = rect.width * state.dpr;
-      canvas.height = rect.height * state.dpr;
+      canvas.width = Math.floor(rect.width * state.dpr);
+      canvas.height = Math.floor(rect.height * state.dpr);
 
       ctx.setTransform(
         state.dpr,
@@ -222,584 +98,440 @@ function EnergyCore({ thinking }) {
         0
       );
 
-      createWorld();
+      /*
+       * Dense electric field.
+       */
+      const particleCount =
+        window.innerWidth < 600 ? 330 : 560;
+
+      state.particles = Array.from(
+        { length: particleCount },
+        createParticle
+      );
+
+      const sparkCount =
+        window.innerWidth < 600 ? 80 : 150;
+
+      state.sparks = Array.from(
+        { length: sparkCount },
+        createSpark
+      );
     }
 
-    resize();
+    function drawGlow(cx, cy, coreRadius, intensity) {
+      const gradient = ctx.createRadialGradient(
+        cx,
+        cy,
+        0,
+        cx,
+        cy,
+        coreRadius * 3.5
+      );
 
-    window.addEventListener("resize", resize);
+      gradient.addColorStop(
+        0,
+        `rgba(255,255,245,${0.95 * intensity})`
+      );
 
-    /* -----------------------------------------------------
-       DRAW
-    ----------------------------------------------------- */
+      gradient.addColorStop(
+        0.08,
+        `rgba(255,238,190,${0.95 * intensity})`
+      );
 
-    let time = 0;
+      gradient.addColorStop(
+        0.22,
+        `rgba(255,166,54,${0.72 * intensity})`
+      );
 
-    function draw() {
-      if (!mounted) return;
+      gradient.addColorStop(
+        0.5,
+        `rgba(255,102,12,${0.28 * intensity})`
+      );
 
-      time += thinking ? 1.9 : 0.72;
+      gradient.addColorStop(
+        1,
+        "rgba(255,60,0,0)"
+      );
 
+      ctx.beginPath();
+      ctx.fillStyle = gradient;
+      ctx.arc(
+        cx,
+        cy,
+        coreRadius * 3.5,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      /*
+       * White-hot center.
+       */
+      const centerGradient = ctx.createRadialGradient(
+        cx,
+        cy,
+        0,
+        cx,
+        cy,
+        coreRadius
+      );
+
+      centerGradient.addColorStop(
+        0,
+        `rgba(255,255,255,${intensity})`
+      );
+
+      centerGradient.addColorStop(
+        0.35,
+        `rgba(255,244,207,${0.98 * intensity})`
+      );
+
+      centerGradient.addColorStop(
+        0.7,
+        `rgba(255,153,35,${0.9 * intensity})`
+      );
+
+      centerGradient.addColorStop(
+        1,
+        "rgba(255,86,0,0)"
+      );
+
+      ctx.beginPath();
+      ctx.fillStyle = centerGradient;
+      ctx.arc(
+        cx,
+        cy,
+        coreRadius,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      /*
+       * Small white nucleus.
+       */
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(255,255,255,${intensity})`;
+      ctx.shadowColor = "rgba(255,180,70,0.95)";
+      ctx.shadowBlur = 25 * intensity;
+      ctx.arc(
+        cx,
+        cy,
+        coreRadius * 0.27,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      ctx.shadowBlur = 0;
+    }
+
+    function drawEnergyLine(
+      cx,
+      cy,
+      particle,
+      now,
+      scale,
+      intensity
+    ) {
+      const angle =
+        particle.angle +
+        now * particle.rotationSpeed;
+
+      const wobble =
+        Math.sin(
+          now * particle.wobble +
+            particle.wobbleOffset
+        ) * 0.18;
+
+      const r =
+        particle.radius *
+        scale *
+        (1 + wobble);
+
+      /*
+       * Slight perspective distortion.
+       * This helps create a volumetric cloud rather than
+       * a flat circular solar system.
+       */
+      const depth =
+        0.72 +
+        (particle.depth + 1) * 0.14;
+
+      const x =
+        cx +
+        Math.cos(angle) * r * depth;
+
+      const y =
+        cy +
+        Math.sin(angle) * r;
+
+      /*
+       * Angular fragmented line.
+       */
+      const segments =
+        thinking ? 5 : 3;
+
+      let px = x;
+      let py = y;
+
+      const localLength =
+        particle.length *
+        (thinking ? 1.7 : 1);
+
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+
+      for (let i = 0; i < segments; i++) {
+        const direction =
+          angle +
+          random(
+            -1.1,
+            1.1
+          );
+
+        const segment =
+          localLength /
+          segments;
+
+        px +=
+          Math.cos(direction) *
+          segment;
+
+        py +=
+          Math.sin(direction) *
+          segment;
+
+        ctx.lineTo(px, py);
+      }
+
+      const pulse =
+        0.55 +
+        Math.sin(
+          now * particle.pulse +
+            particle.phase
+        ) *
+          0.45;
+
+      const alpha =
+        particle.alpha *
+        pulse *
+        intensity;
+
+      ctx.strokeStyle =
+        `rgba(255,${random(
+          115,
+          205
+        )},${random(
+          30,
+          105
+        )},${alpha})`;
+
+      ctx.lineWidth =
+        particle.size *
+        (thinking ? 1.15 : 0.8);
+
+      ctx.stroke();
+
+      /*
+       * Small glowing point at the beginning
+       * of some fragments.
+       */
+      if (
+        Math.random() <
+        (thinking ? 0.16 : 0.06)
+      ) {
+        ctx.beginPath();
+
+        ctx.fillStyle =
+          `rgba(255,210,130,${alpha})`;
+
+        ctx.arc(
+          x,
+          y,
+          particle.size * 1.5,
+          0,
+          Math.PI * 2
+        );
+
+        ctx.fill();
+      }
+    }
+
+    function drawSparks(
+      cx,
+      cy,
+      scale,
+      now,
+      intensity
+    ) {
+      state.sparks.forEach((spark) => {
+        spark.angle += spark.speed;
+
+        const r =
+          spark.radius *
+          scale;
+
+        const x =
+          cx +
+          Math.cos(spark.angle) *
+            r;
+
+        const y =
+          cy +
+          Math.sin(spark.angle) *
+            r;
+
+        const pulse =
+          0.4 +
+          Math.sin(
+            now * 0.004 +
+              spark.phase
+          ) *
+            0.6;
+
+        ctx.beginPath();
+
+        ctx.fillStyle =
+          `rgba(255,190,105,${
+            spark.alpha *
+            pulse *
+            intensity
+          })`;
+
+        ctx.arc(
+          x,
+          y,
+          spark.size,
+          0,
+          Math.PI * 2
+        );
+
+        ctx.fill();
+      });
+    }
+
+    function draw(now) {
       const width = state.width;
       const height = state.height;
+
+      ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+      );
 
       const cx = width / 2;
       const cy = height / 2;
 
-      const base = Math.min(width, height);
+      /*
+       * Core size.
+       *
+       * Deliberately NOT huge.
+       * We want the same compact energetic mass
+       * seen in your reference rather than a sun.
+       */
+      const baseScale =
+        Math.min(width, height) *
+        (window.innerWidth < 600
+          ? 0.23
+          : 0.28);
 
-      /* ---------------------------------------------------
-         BACKGROUND
-      --------------------------------------------------- */
-
-      ctx.clearRect(0, 0, width, height);
+      const energy =
+        thinking ? 1.45 : 1;
 
       /*
-        Large soft orange haze.
-        This is deliberately subtle.
-      */
+       * Very subtle ambient glow behind the field.
+       */
+      const ambient =
+        ctx.createRadialGradient(
+          cx,
+          cy,
+          0,
+          cx,
+          cy,
+          baseScale * 1.5
+        );
 
-      const ambient = ctx.createRadialGradient(
-        cx,
-        cy,
+      ambient.addColorStop(
         0,
-        cx,
-        cy,
-        base * 0.48
+        `rgba(255,91,0,${
+          0.07 * energy
+        })`
       );
 
       ambient.addColorStop(
-        0,
-        thinking
-          ? "rgba(255,125,24,0.22)"
-          : "rgba(255,115,20,0.13)"
-      );
-
-      ambient.addColorStop(
-        0.22,
-        "rgba(255,86,10,0.09)"
-      );
-
-      ambient.addColorStop(
-        0.55,
-        "rgba(255,50,0,0.025)"
+        0.5,
+        `rgba(255,70,0,${
+          0.025 * energy
+        })`
       );
 
       ambient.addColorStop(
         1,
-        "rgba(0,0,0,0)"
+        "rgba(255,40,0,0)"
       );
 
       ctx.fillStyle = ambient;
 
       ctx.fillRect(
-        cx - base * 0.5,
-        cy - base * 0.5,
-        base,
-        base
+        cx - baseScale * 1.5,
+        cy - baseScale * 1.5,
+        baseScale * 3,
+        baseScale * 3
       );
-
-      /* ---------------------------------------------------
-         PARTICLES
-      --------------------------------------------------- */
-
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-
-      for (const p of state.particles) {
-        p.angle +=
-          p.speed *
-          (thinking ? 3.0 : 1.0);
-
-        const breathing =
-          Math.sin(
-            time * 0.012 +
-              p.phase
-          ) * p.drift;
-
-        const r =
-          p.radius *
-          (1 + breathing * 0.07);
-
-        /*
-          Add asymmetric distortion.
-          This prevents a clean circular cloud.
-        */
-
-        const distortionX =
-          Math.sin(
-            p.angle * 3.7 +
-              time * 0.004
-          ) *
-          base *
-          0.012;
-
-        const distortionY =
-          Math.cos(
-            p.angle * 5.1 -
-              time * 0.003
-          ) *
-          base *
-          0.012;
-
-        const x =
-          cx +
-          Math.cos(p.angle) * r +
-          distortionX;
-
-        const y =
-          cy +
-          Math.sin(p.angle) *
-            r *
-            0.91 +
-          distortionY;
-
-        const flicker =
-          0.65 +
-          Math.sin(
-            time * 0.025 +
-              p.phase
-          ) *
-            0.35;
-
-        ctx.beginPath();
-
-        ctx.arc(
-          x,
-          y,
-          p.size *
-            (thinking ? 1.15 : 1),
-          0,
-          Math.PI * 2
-        );
-
-        ctx.fillStyle = `rgba(255, ${
-          random(145, 215).toFixed(0)
-        }, 55, ${
-          (p.opacity * flicker).toFixed(3)
-        })`;
-
-        ctx.fill();
-      }
-
-      ctx.restore();
-
-      /* ---------------------------------------------------
-         ANGULAR ENERGY FILAMENTS
-      --------------------------------------------------- */
-
-      ctx.save();
-
-      ctx.translate(cx, cy);
-
-      for (const f of state.filaments) {
-        /*
-          Slow rotation normally.
-          Fast chaotic movement while thinking.
-        */
-
-        f.angle +=
-          f.speed *
-          (thinking ? 7 : 1);
-
-        const pulse =
-          0.72 +
-          Math.sin(
-            time * 0.018 * f.flicker +
-              f.phase
-          ) *
-            0.28;
-
-        const opacity =
-          f.opacity *
-          pulse *
-          (thinking ? 1.18 : 1);
-
-        ctx.save();
-
-        ctx.rotate(f.angle);
-
-        ctx.beginPath();
-
-        for (let i = 0; i < f.points.length; i++) {
-          const point = f.points[i];
-
-          /*
-            Distort each point independently.
-            This produces the hand-drawn / unstable
-            energy-network appearance.
-          */
-
-          const wobbleX =
-            Math.sin(
-              time * 0.008 +
-                i * 2.1 +
-                f.phase
-            ) *
-            base *
-            0.008;
-
-          const wobbleY =
-            Math.cos(
-              time * 0.009 +
-                i * 1.7 +
-                f.phase
-            ) *
-            base *
-            0.008;
-
-          const x = point.x + wobbleX;
-          const y = point.y + wobbleY;
-
-          if (i === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
-        }
-
-        ctx.strokeStyle = `rgba(255, ${
-          thinking ? 115 : 145
-        }, 35, ${opacity.toFixed(3)})`;
-
-        ctx.lineWidth =
-          f.width *
-          (thinking ? 1.18 : 1);
-
-        ctx.shadowBlur =
-          thinking ? 8 : 3;
-
-        ctx.shadowColor =
-          "rgba(255,100,20,0.7)";
-
-        ctx.stroke();
-
-        ctx.restore();
-      }
-
-      ctx.restore();
-
-      /* ---------------------------------------------------
-         EXTRA MICRO-FILAMENTS
-      --------------------------------------------------- */
-
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.globalCompositeOperation = "lighter";
-
-      const microCount = thinking ? 180 : 85;
-
-      for (let i = 0; i < microCount; i++) {
-        const angle =
-          i * 2.399 +
-          Math.sin(time * 0.002 + i) * 0.12;
-
-        const radius =
-          base *
-          (0.055 +
-            ((i * 37) % 100) / 100 *
-              0.43);
-
-        const len =
-          random(5, 32) *
-          (thinking ? 1.15 : 1);
-
-        const x1 =
-          Math.cos(angle) * radius;
-
-        const y1 =
-          Math.sin(angle) *
-          radius *
-          random(0.78, 1.1);
-
-        const x2 =
-          x1 +
-          Math.cos(
-            angle +
-              random(-1.1, 1.1)
-          ) *
-            len;
-
-        const y2 =
-          y1 +
-          Math.sin(
-            angle +
-              random(-1.1, 1.1)
-          ) *
-            len;
-
-        ctx.beginPath();
-
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-
-        ctx.strokeStyle =
-          `rgba(255, ${
-            thinking ? 125 : 155
-          }, 45, ${
-            random(0.08, 0.38)
-          })`;
-
-        ctx.lineWidth =
-          random(0.25, 0.8);
-
-        ctx.stroke();
-      }
-
-      ctx.restore();
-
-      /* ---------------------------------------------------
-         SPARKS
-      --------------------------------------------------- */
-
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.globalCompositeOperation = "lighter";
-
-      for (const s of state.sparks) {
-        s.angle +=
-          s.speed *
-          (thinking ? 5 : 1);
-
-        const pulse =
-          0.5 +
-          Math.sin(
-            time * 0.035 +
-              s.phase
-          ) *
-            0.5;
-
-        const r = s.radius;
-
-        const x =
-          Math.cos(s.angle) * r;
-
-        const y =
-          Math.sin(s.angle) *
-          r *
-          0.92;
-
-        const x2 =
-          x +
-          Math.cos(
-            s.angle +
-              random(-0.5, 0.5)
-          ) *
-            s.length;
-
-        const y2 =
-          y +
-          Math.sin(
-            s.angle +
-              random(-0.5, 0.5)
-          ) *
-            s.length;
-
-        ctx.beginPath();
-
-        ctx.moveTo(x, y);
-        ctx.lineTo(x2, y2);
-
-        ctx.strokeStyle =
-          `rgba(255, 174, 70, ${
-            (s.opacity * pulse).toFixed(3)
-          })`;
-
-        ctx.lineWidth =
-          s.width *
-          (thinking ? 1.2 : 1);
-
-        ctx.stroke();
-      }
-
-      ctx.restore();
-
-      /* ---------------------------------------------------
-         CENTRAL ENERGY CORE
-      --------------------------------------------------- */
-
-      const coreSize =
-        base *
-        (thinking ? 0.048 : 0.040);
 
       /*
-        Large blurred energy field.
-      */
-
-      ctx.save();
-
-      ctx.globalCompositeOperation = "lighter";
-
-      const glow = ctx.createRadialGradient(
-        cx,
-        cy,
-        0,
-        cx,
-        cy,
-        base *
-          (thinking ? 0.22 : 0.17)
-      );
-
-      glow.addColorStop(
-        0,
-        "rgba(255,255,245,0.98)"
-      );
-
-      glow.addColorStop(
-        0.025,
-        "rgba(255,245,205,0.98)"
-      );
-
-      glow.addColorStop(
-        0.07,
-        "rgba(255,185,75,0.85)"
-      );
-
-      glow.addColorStop(
-        0.19,
-        "rgba(255,104,18,0.45)"
-      );
-
-      glow.addColorStop(
-        0.42,
-        "rgba(255,55,5,0.14)"
-      );
-
-      glow.addColorStop(
-        1,
-        "rgba(255,40,0,0)"
-      );
-
-      ctx.fillStyle = glow;
-
-      ctx.beginPath();
-
-      ctx.arc(
-        cx,
-        cy,
-        base *
-          (thinking ? 0.22 : 0.17),
-        0,
-        Math.PI * 2
-      );
-
-      ctx.fill();
-
-      /* ---------------------------------------------------
-         WHITE-HOT CORE
-      --------------------------------------------------- */
-
-      const coreGradient =
-        ctx.createRadialGradient(
-          cx - coreSize * 0.2,
-          cy - coreSize * 0.2,
-          0,
+       * Electric fragments.
+       */
+      state.particles.forEach((particle) => {
+        drawEnergyLine(
           cx,
           cy,
-          coreSize
+          particle,
+          now,
+          baseScale,
+          energy
         );
+      });
 
-      coreGradient.addColorStop(
-        0,
-        "#ffffff"
-      );
-
-      coreGradient.addColorStop(
-        0.38,
-        "#fff8df"
-      );
-
-      coreGradient.addColorStop(
-        0.72,
-        "#ffbd57"
-      );
-
-      coreGradient.addColorStop(
-        1,
-        "rgba(255,105,20,0)"
-      );
-
-      ctx.fillStyle = coreGradient;
-
-      ctx.beginPath();
-
-      ctx.arc(
+      drawSparks(
         cx,
         cy,
-        coreSize,
-        0,
-        Math.PI * 2
+        baseScale,
+        now,
+        energy
       );
 
-      ctx.fill();
-
-      ctx.restore();
-
-      /* ---------------------------------------------------
-         CENTRAL FLICKERING PARTICLES
-      --------------------------------------------------- */
-
-      ctx.save();
-
-      ctx.globalCompositeOperation = "lighter";
-
-      const centralParticles =
-        thinking ? 120 : 65;
-
-      for (let i = 0; i < centralParticles; i++) {
-        const angle =
-          Math.random() *
-          Math.PI *
-          2;
-
-        const radius =
-          Math.random() *
-          base *
-          (thinking ? 0.13 : 0.10);
-
-        const x =
-          cx +
-          Math.cos(angle) * radius;
-
-        const y =
-          cy +
-          Math.sin(angle) * radius;
-
-        ctx.beginPath();
-
-        ctx.arc(
-          x,
-          y,
-          random(0.25, 1.15),
-          0,
-          Math.PI * 2
-        );
-
-        ctx.fillStyle =
-          `rgba(255, ${
-            random(170, 240)
-          }, 90, ${
-            random(0.15, 0.8)
-          })`;
-
-        ctx.fill();
-      }
-
-      ctx.restore();
+      /*
+       * Bright core drawn LAST so it stays visible
+       * above the chaotic electrical field.
+       */
+      drawGlow(
+        cx,
+        cy,
+        baseScale *
+          (thinking ? 0.095 : 0.075),
+        energy
+      );
 
       animationRef.current =
         requestAnimationFrame(draw);
     }
 
-    draw();
+    rebuild();
+
+    const resizeObserver =
+      new ResizeObserver(rebuild);
+
+    resizeObserver.observe(canvas);
+
+    animationRef.current =
+      requestAnimationFrame(draw);
 
     return () => {
-      mounted = false;
-
-      window.removeEventListener(
-        "resize",
-        resize
-      );
+      resizeObserver.disconnect();
 
       if (animationRef.current) {
         cancelAnimationFrame(
@@ -812,7 +544,7 @@ function EnergyCore({ thinking }) {
   return (
     <div
       className={`energy-core ${
-        thinking ? "thinking" : ""
+        thinking ? "energy-thinking" : ""
       }`}
     >
       <canvas ref={canvasRef} />
@@ -820,62 +552,71 @@ function EnergyCore({ thinking }) {
   );
 }
 
-/* =========================================================
-   MAIN APP
-========================================================= */
-
 export default function Home() {
-  const [booted, setBooted] = useState(false);
+  const [booted, setBooted] =
+    useState(false);
+
   const [visibleBootLines, setVisibleBootLines] =
     useState(0);
 
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      content:
-        "Good to see you. Systems are online — how can I help?",
-    },
-  ]);
+  const [messages, setMessages] =
+    useState([
+      {
+        role: "assistant",
+        content:
+          "Good to see you. Systems are online — how can I help?",
+      },
+    ]);
 
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [voiceOn, setVoiceOn] = useState(false);
-  const [listening, setListening] = useState(false);
+  const [input, setInput] =
+    useState("");
 
-  const logRef = useRef(null);
-  const recognitionRef = useRef(null);
+  const [loading, setLoading] =
+    useState(false);
 
-  /* =======================================================
-     BOOT SEQUENCE
-  ======================================================= */
+  const [voiceOn, setVoiceOn] =
+    useState(false);
 
+  const [listening, setListening] =
+    useState(false);
+
+  const logRef =
+    useRef(null);
+
+  const recognitionRef =
+    useRef(null);
+
+  /*
+   * Boot sequence.
+   */
   useEffect(() => {
     if (
       visibleBootLines <
       BOOT_LINES.length
     ) {
-      const timer = setTimeout(() => {
-        setVisibleBootLines(
-          (n) => n + 1
-        );
-      }, 380);
+      const timer =
+        setTimeout(() => {
+          setVisibleBootLines(
+            (value) => value + 1
+          );
+        }, 380);
 
       return () =>
         clearTimeout(timer);
     }
 
-    const timer = setTimeout(() => {
-      setBooted(true);
-    }, 500);
+    const timer =
+      setTimeout(() => {
+        setBooted(true);
+      }, 500);
 
     return () =>
       clearTimeout(timer);
   }, [visibleBootLines]);
 
-  /* =======================================================
-     CHAT AUTO SCROLL
-  ======================================================= */
-
+  /*
+   * Auto-scroll chat.
+   */
   useEffect(() => {
     const log = logRef.current;
 
@@ -887,18 +628,16 @@ export default function Home() {
     });
   }, [messages, loading]);
 
-  /* =======================================================
-     SPEECH RECOGNITION
-  ======================================================= */
-
+  /*
+   * Speech recognition.
+   */
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
     const SpeechRecognition =
-      window.SpeechRecognition ||
-      window.webkitSpeechRecognition;
+      typeof window !== "undefined" &&
+      (
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition
+      );
 
     if (!SpeechRecognition) {
       return;
@@ -913,8 +652,7 @@ export default function Home() {
 
     recognition.onresult = (event) => {
       const transcript =
-        event.results?.[0]?.[0]?.transcript ||
-        "";
+        event.results[0][0].transcript;
 
       setInput(transcript);
     };
@@ -923,12 +661,13 @@ export default function Home() {
       setListening(false);
 
       if (
-        event.error === "not-allowed" ||
+        event.error ===
+          "not-allowed" ||
         event.error ===
           "service-not-allowed"
       ) {
         alert(
-          "Microphone access was blocked. Allow microphone access for this site."
+          "Microphone access was blocked. Please allow microphone access for this website."
         );
       }
     };
@@ -947,18 +686,15 @@ export default function Home() {
     };
   }, []);
 
-  /* =======================================================
-     MICROPHONE
-  ======================================================= */
-
   function toggleMic() {
     const recognition =
       recognitionRef.current;
 
     if (!recognition) {
       alert(
-        "Voice input isn't supported in this browser. Try Chrome or Edge."
+        "Voice input is not supported by this browser. Try Chrome or Edge."
       );
+
       return;
     }
 
@@ -968,6 +704,7 @@ export default function Home() {
       } catch {}
 
       setListening(false);
+
       return;
     }
 
@@ -979,12 +716,10 @@ export default function Home() {
     }
   }
 
-  /* =======================================================
-     TEXT TO SPEECH
-  ======================================================= */
-
   async function speak(text) {
-    if (!voiceOn) return;
+    if (!voiceOn) {
+      return;
+    }
 
     try {
       const response =
@@ -1007,28 +742,26 @@ export default function Home() {
 
         alert(
           "Voice playback failed: " +
-            (data?.error ||
-              `HTTP ${response.status}`)
+            (
+              data?.error ||
+              `HTTP ${response.status}`
+            )
         );
 
         return;
       }
 
-      const audioBlob =
+      const blob =
         await response.blob();
 
-      const audioUrl =
-        URL.createObjectURL(
-          audioBlob
-        );
+      const url =
+        URL.createObjectURL(blob);
 
       const audio =
-        new Audio(audioUrl);
+        new Audio(url);
 
       audio.onended = () => {
-        URL.revokeObjectURL(
-          audioUrl
-        );
+        URL.revokeObjectURL(url);
       };
 
       await audio.play();
@@ -1039,10 +772,6 @@ export default function Home() {
       );
     }
   }
-
-  /* =======================================================
-     SEND MESSAGE
-  ======================================================= */
 
   async function sendMessage() {
     const text =
@@ -1101,19 +830,15 @@ export default function Home() {
         return;
       }
 
-      const reply =
-        data.reply ||
-        "I received your message.";
-
       setMessages((current) => [
         ...current,
         {
           role: "assistant",
-          content: reply,
+          content: data.reply,
         },
       ]);
 
-      await speak(reply);
+      speak(data.reply);
     } catch {
       setMessages((current) => [
         ...current,
@@ -1128,10 +853,6 @@ export default function Home() {
       setLoading(false);
     }
   }
-
-  /* =======================================================
-     BOOT SCREEN
-  ======================================================= */
 
   if (!booted) {
     return (
@@ -1155,14 +876,8 @@ export default function Home() {
     );
   }
 
-  /* =======================================================
-     UI
-  ======================================================= */
-
   return (
     <main className="app">
-      {/* HEADER */}
-
       <header className="header">
         <div className="title-block">
           <div className="wordmark">
@@ -1170,13 +885,7 @@ export default function Home() {
           </div>
 
           <div className="status-line">
-            <span
-              className={`status-dot ${
-                loading
-                  ? "processing"
-                  : ""
-              }`}
-            />
+            <span className="status-dot" />
 
             {loading
               ? "PROCESSING"
@@ -1185,7 +894,6 @@ export default function Home() {
         </div>
 
         <button
-          type="button"
           className={`voice-toggle ${
             voiceOn
               ? "active"
@@ -1193,8 +901,7 @@ export default function Home() {
           }`}
           onClick={() =>
             setVoiceOn(
-              (value) =>
-                !value
+              (value) => !value
             )
           }
         >
@@ -1205,20 +912,15 @@ export default function Home() {
         </button>
       </header>
 
-      {/* ENERGY CORE */}
-
-      <div className="core-stage">
+      <section className="core-stage">
         <EnergyCore
           thinking={loading}
         />
-      </div>
-
-      {/* CHAT */}
+      </section>
 
       <section
         className="log"
         ref={logRef}
-        aria-live="polite"
       >
         {messages.map(
           (message, index) => (
@@ -1263,11 +965,8 @@ export default function Home() {
         )}
       </section>
 
-      {/* INPUT */}
-
       <footer className="input-bar">
         <button
-          type="button"
           className={`icon-btn mic ${
             listening
               ? "listening"
@@ -1292,17 +991,14 @@ export default function Home() {
               event.key ===
               "Enter"
             ) {
-              event.preventDefault();
               sendMessage();
             }
           }}
           placeholder="Speak, and I shall listen..."
           disabled={loading}
-          aria-label="Message JARVIS"
         />
 
         <button
-          type="button"
           className="icon-btn send"
           onClick={sendMessage}
           disabled={
