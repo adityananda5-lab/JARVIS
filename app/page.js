@@ -4,553 +4,752 @@ import { useEffect, useRef, useState } from "react";
 
 const BOOT_LINES = [
   { text: "INITIALIZING J.A.R.V.I.S. CORE...", dim: false },
-  { text: "loading language subsystem", dim: true },
-  { text: "calibrating voice interface", dim: true },
-  { text: "ALL SYSTEMS NOMINAL", dim: false },
+  { text: "loading neural interface", dim: true },
+  { text: "stabilizing energy matrix", dim: true },
+  { text: "CALIBRATION COMPLETE", dim: false },
 ];
 
-function EnergyCore({ thinking }) {
+/* =========================================================
+   JARVIS ENERGY CORE
+   Canvas-based — NO SVG RINGS / NO ORBITS
+   ========================================================= */
+
+function JarvisCore({ thinking }) {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
-  const stateRef = useRef({
-    width: 0,
-    height: 0,
-    dpr: 1,
-    particles: [],
-    sparks: [],
-    time: 0,
-  });
+  const thinkingRef = useRef(thinking);
+
+  useEffect(() => {
+    thinkingRef.current = thinking;
+  }, [thinking]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", {
+      alpha: true,
+    });
+
     if (!ctx) return;
 
-    const state = stateRef.current;
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let running = true;
 
-    function random(min, max) {
-      return Math.random() * (max - min) + min;
+    /*
+     * Deterministic random generator.
+     * This means the energy structure is stable rather than
+     * completely changing shape every frame.
+     */
+    let seed = 734291;
+
+    function random() {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
     }
 
-    function createParticle() {
-      const angle = Math.random() * Math.PI * 2;
+    /*
+     * Each electrical strand gets its own data.
+     */
+    let strands = [];
+    let sparks = [];
+
+    function createStrands() {
+      seed = 734291;
+
+      strands = [];
 
       /*
-       * Instead of distributing particles on a circle,
-       * distribute them through a spherical-ish volume.
+       * Main dense electrical network.
        */
-      const radiusBias = Math.pow(Math.random(), 0.55);
-      const radius = radiusBias;
+      const strandCount = window.innerWidth < 600 ? 125 : 190;
 
-      return {
-        angle,
-        radius,
-        depth: random(-1, 1),
+      for (let i = 0; i < strandCount; i++) {
+        const angle =
+          random() * Math.PI * 2 +
+          Math.sin(i * 2.17) * 0.15;
 
-        speed: random(0.0007, 0.0025),
-        rotationSpeed: random(-0.004, 0.004),
+        const length =
+          0.45 +
+          Math.pow(random(), 0.65) * 0.85;
 
-        size: random(0.6, 2.2),
+        const segments =
+          9 + Math.floor(random() * 23);
 
-        phase: random(0, Math.PI * 2),
-        pulse: random(0.5, 1.8),
+        const thickness =
+          0.35 + random() * 0.85;
 
-        alpha: random(0.18, 0.85),
+        const brightness =
+          0.18 + random() * 0.72;
 
-        length: random(4, 18),
+        const angularDrift =
+          (random() - 0.5) * 0.018;
 
-        // Irregular angular movement.
-        wobble: random(0.002, 0.008),
-        wobbleOffset: random(0, 1000),
-      };
+        const wobble =
+          0.5 + random() * 1.6;
+
+        strands.push({
+          angle,
+          length,
+          segments,
+          thickness,
+          brightness,
+          angularDrift,
+          wobble,
+          seed: random() * 1000,
+          phase: random() * Math.PI * 2,
+        });
+      }
+
+      /*
+       * Smaller broken electrical fragments.
+       */
+      for (let i = 0; i < 260; i++) {
+        sparks.push({
+          angle: random() * Math.PI * 2,
+          radius:
+            0.15 + Math.pow(random(), 0.65) * 1.05,
+          length:
+            2 + random() * 13,
+          brightness:
+            0.18 + random() * 0.75,
+          size:
+            0.3 + random() * 1.15,
+          phase:
+            random() * Math.PI * 2,
+          speed:
+            0.15 + random() * 0.7,
+        });
+      }
     }
 
-    function createSpark() {
-      return {
-        angle: random(0, Math.PI * 2),
-        radius: random(0.22, 1.05),
-        speed: random(0.002, 0.008),
-        size: random(0.5, 1.8),
-        alpha: random(0.25, 0.9),
-        phase: random(0, Math.PI * 2),
-      };
-    }
-
-    function rebuild() {
+    function resize() {
       const rect = canvas.getBoundingClientRect();
 
-      state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = rect.width;
+      height = rect.height;
 
-      state.width = rect.width;
-      state.height = rect.height;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-      canvas.width = Math.floor(rect.width * state.dpr);
-      canvas.height = Math.floor(rect.height * state.dpr);
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
 
-      ctx.setTransform(
-        state.dpr,
-        0,
-        0,
-        state.dpr,
-        0,
-        0
-      );
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      /*
-       * Dense electric field.
-       */
-      const particleCount =
-        window.innerWidth < 600 ? 330 : 560;
-
-      state.particles = Array.from(
-        { length: particleCount },
-        createParticle
-      );
-
-      const sparkCount =
-        window.innerWidth < 600 ? 80 : 150;
-
-      state.sparks = Array.from(
-        { length: sparkCount },
-        createSpark
-      );
+      createStrands();
     }
 
-    function drawGlow(cx, cy, coreRadius, intensity) {
-      const gradient = ctx.createRadialGradient(
-        cx,
-        cy,
-        0,
-        cx,
-        cy,
-        coreRadius * 3.5
-      );
+    resize();
 
-      gradient.addColorStop(
-        0,
-        `rgba(255,255,245,${0.95 * intensity})`
-      );
+    window.addEventListener("resize", resize);
 
-      gradient.addColorStop(
-        0.08,
-        `rgba(255,238,190,${0.95 * intensity})`
-      );
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(canvas);
 
-      gradient.addColorStop(
-        0.22,
-        `rgba(255,166,54,${0.72 * intensity})`
-      );
+    function drawCore(time) {
+      if (!running) return;
 
-      gradient.addColorStop(
-        0.5,
-        `rgba(255,102,12,${0.28 * intensity})`
-      );
+      const t = time * 0.001;
 
-      gradient.addColorStop(
-        1,
-        "rgba(255,60,0,0)"
-      );
-
-      ctx.beginPath();
-      ctx.fillStyle = gradient;
-      ctx.arc(
-        cx,
-        cy,
-        coreRadius * 3.5,
-        0,
-        Math.PI * 2
-      );
-      ctx.fill();
-
-      /*
-       * White-hot center.
-       */
-      const centerGradient = ctx.createRadialGradient(
-        cx,
-        cy,
-        0,
-        cx,
-        cy,
-        coreRadius
-      );
-
-      centerGradient.addColorStop(
-        0,
-        `rgba(255,255,255,${intensity})`
-      );
-
-      centerGradient.addColorStop(
-        0.35,
-        `rgba(255,244,207,${0.98 * intensity})`
-      );
-
-      centerGradient.addColorStop(
-        0.7,
-        `rgba(255,153,35,${0.9 * intensity})`
-      );
-
-      centerGradient.addColorStop(
-        1,
-        "rgba(255,86,0,0)"
-      );
-
-      ctx.beginPath();
-      ctx.fillStyle = centerGradient;
-      ctx.arc(
-        cx,
-        cy,
-        coreRadius,
-        0,
-        Math.PI * 2
-      );
-      ctx.fill();
-
-      /*
-       * Small white nucleus.
-       */
-      ctx.beginPath();
-      ctx.fillStyle = `rgba(255,255,255,${intensity})`;
-      ctx.shadowColor = "rgba(255,180,70,0.95)";
-      ctx.shadowBlur = 25 * intensity;
-      ctx.arc(
-        cx,
-        cy,
-        coreRadius * 0.27,
-        0,
-        Math.PI * 2
-      );
-      ctx.fill();
-
-      ctx.shadowBlur = 0;
-    }
-
-    function drawEnergyLine(
-      cx,
-      cy,
-      particle,
-      now,
-      scale,
-      intensity
-    ) {
-      const angle =
-        particle.angle +
-        now * particle.rotationSpeed;
-
-      const wobble =
-        Math.sin(
-          now * particle.wobble +
-            particle.wobbleOffset
-        ) * 0.18;
-
-      const r =
-        particle.radius *
-        scale *
-        (1 + wobble);
-
-      /*
-       * Slight perspective distortion.
-       * This helps create a volumetric cloud rather than
-       * a flat circular solar system.
-       */
-      const depth =
-        0.72 +
-        (particle.depth + 1) * 0.14;
-
-      const x =
-        cx +
-        Math.cos(angle) * r * depth;
-
-      const y =
-        cy +
-        Math.sin(angle) * r;
-
-      /*
-       * Angular fragmented line.
-       */
-      const segments =
-        thinking ? 5 : 3;
-
-      let px = x;
-      let py = y;
-
-      const localLength =
-        particle.length *
-        (thinking ? 1.7 : 1);
-
-      ctx.beginPath();
-      ctx.moveTo(px, py);
-
-      for (let i = 0; i < segments; i++) {
-        const direction =
-          angle +
-          random(
-            -1.1,
-            1.1
-          );
-
-        const segment =
-          localLength /
-          segments;
-
-        px +=
-          Math.cos(direction) *
-          segment;
-
-        py +=
-          Math.sin(direction) *
-          segment;
-
-        ctx.lineTo(px, py);
-      }
-
-      const pulse =
-        0.55 +
-        Math.sin(
-          now * particle.pulse +
-            particle.phase
-        ) *
-          0.45;
-
-      const alpha =
-        particle.alpha *
-        pulse *
-        intensity;
-
-      ctx.strokeStyle =
-        `rgba(255,${random(
-          115,
-          205
-        )},${random(
-          30,
-          105
-        )},${alpha})`;
-
-      ctx.lineWidth =
-        particle.size *
-        (thinking ? 1.15 : 0.8);
-
-      ctx.stroke();
-
-      /*
-       * Small glowing point at the beginning
-       * of some fragments.
-       */
-      if (
-        Math.random() <
-        (thinking ? 0.16 : 0.06)
-      ) {
-        ctx.beginPath();
-
-        ctx.fillStyle =
-          `rgba(255,210,130,${alpha})`;
-
-        ctx.arc(
-          x,
-          y,
-          particle.size * 1.5,
-          0,
-          Math.PI * 2
-        );
-
-        ctx.fill();
-      }
-    }
-
-    function drawSparks(
-      cx,
-      cy,
-      scale,
-      now,
-      intensity
-    ) {
-      state.sparks.forEach((spark) => {
-        spark.angle += spark.speed;
-
-        const r =
-          spark.radius *
-          scale;
-
-        const x =
-          cx +
-          Math.cos(spark.angle) *
-            r;
-
-        const y =
-          cy +
-          Math.sin(spark.angle) *
-            r;
-
-        const pulse =
-          0.4 +
-          Math.sin(
-            now * 0.004 +
-              spark.phase
-          ) *
-            0.6;
-
-        ctx.beginPath();
-
-        ctx.fillStyle =
-          `rgba(255,190,105,${
-            spark.alpha *
-            pulse *
-            intensity
-          })`;
-
-        ctx.arc(
-          x,
-          y,
-          spark.size,
-          0,
-          Math.PI * 2
-        );
-
-        ctx.fill();
-      });
-    }
-
-    function draw(now) {
-      const width = state.width;
-      const height = state.height;
-
-      ctx.clearRect(
-        0,
-        0,
-        width,
-        height
-      );
+      ctx.clearRect(0, 0, width, height);
 
       const cx = width / 2;
       const cy = height / 2;
 
       /*
-       * Core size.
-       *
-       * Deliberately NOT huge.
-       * We want the same compact energetic mass
-       * seen in your reference rather than a sun.
+       * The core is intentionally not huge.
+       * This prevents the "giant sun" effect.
        */
-      const baseScale =
+      const baseRadius =
         Math.min(width, height) *
-        (window.innerWidth < 600
-          ? 0.23
-          : 0.28);
+        (window.innerWidth < 600 ? 0.125 : 0.105);
 
-      const energy =
-        thinking ? 1.45 : 1;
+      const energyMultiplier = thinkingRef.current
+        ? 1.28
+        : 1;
 
       /*
-       * Very subtle ambient glow behind the field.
+       * -----------------------------------------------------
+       * AMBIENT ENERGY CLOUD
+       * -----------------------------------------------------
        */
-      const ambient =
-        ctx.createRadialGradient(
-          cx,
-          cy,
-          0,
-          cx,
-          cy,
-          baseScale * 1.5
-        );
 
-      ambient.addColorStop(
+      const cloudRadius =
+        baseRadius * 5.0 * energyMultiplier;
+
+      const cloud = ctx.createRadialGradient(
+        cx,
+        cy,
         0,
-        `rgba(255,91,0,${
-          0.07 * energy
-        })`
+        cx,
+        cy,
+        cloudRadius
       );
 
-      ambient.addColorStop(
-        0.5,
-        `rgba(255,70,0,${
-          0.025 * energy
-        })`
+      cloud.addColorStop(
+        0,
+        "rgba(255, 104, 12, 0.19)"
       );
 
-      ambient.addColorStop(
+      cloud.addColorStop(
+        0.28,
+        "rgba(255, 87, 10, 0.10)"
+      );
+
+      cloud.addColorStop(
+        0.62,
+        "rgba(255, 70, 0, 0.035)"
+      );
+
+      cloud.addColorStop(
         1,
-        "rgba(255,40,0,0)"
+        "rgba(255, 40, 0, 0)"
       );
 
-      ctx.fillStyle = ambient;
+      ctx.fillStyle = cloud;
 
-      ctx.fillRect(
-        cx - baseScale * 1.5,
-        cy - baseScale * 1.5,
-        baseScale * 3,
-        baseScale * 3
-      );
-
-      /*
-       * Electric fragments.
-       */
-      state.particles.forEach((particle) => {
-        drawEnergyLine(
-          cx,
-          cy,
-          particle,
-          now,
-          baseScale,
-          energy
-        );
-      });
-
-      drawSparks(
+      ctx.beginPath();
+      ctx.arc(
         cx,
         cy,
-        baseScale,
-        now,
-        energy
+        cloudRadius,
+        0,
+        Math.PI * 2
       );
+      ctx.fill();
 
       /*
-       * Bright core drawn LAST so it stays visible
-       * above the chaotic electrical field.
+       * -----------------------------------------------------
+       * ELECTRICAL NETWORK
+       * -----------------------------------------------------
        */
-      drawGlow(
+
+      ctx.save();
+
+      ctx.globalCompositeOperation = "lighter";
+
+      for (let i = 0; i < strands.length; i++) {
+        const s = strands[i];
+
+        /*
+         * Every strand slowly changes orientation.
+         */
+        const dynamicAngle =
+          s.angle +
+          Math.sin(
+            t * 0.34 +
+              s.phase
+          ) *
+            s.angularDrift *
+            35;
+
+        /*
+         * The outer radius changes subtly.
+         */
+        const maxRadius =
+          baseRadius *
+          (1.25 + s.length * 4.9) *
+          energyMultiplier;
+
+        let angle = dynamicAngle;
+
+        let previousX = cx;
+        let previousY = cy;
+
+        /*
+         * Individual strands don't travel in a perfect
+         * straight radial line. They zig-zag and branch.
+         */
+        for (
+          let j = 0;
+          j < s.segments;
+          j++
+        ) {
+          const progress =
+            (j + 1) / s.segments;
+
+          const radius =
+            maxRadius *
+            progress;
+
+          const wave =
+            Math.sin(
+              t * 1.35 +
+                s.seed +
+                j * 1.73
+            ) *
+            s.wobble *
+            (1 - progress * 0.35);
+
+          const sharpJitter =
+            Math.sin(
+              s.seed * 4.1 +
+                j * 9.17
+            ) *
+            0.22;
+
+          angle +=
+            wave * 0.018 +
+            sharpJitter * 0.035;
+
+          const x =
+            cx +
+            Math.cos(angle) *
+              radius;
+
+          const y =
+            cy +
+            Math.sin(angle) *
+              radius;
+
+          /*
+           * Some strands become dimmer toward their edge.
+           */
+          const fade =
+            Math.sin(progress * Math.PI) *
+            0.9 +
+            0.1;
+
+          const alpha =
+            s.brightness *
+            fade *
+            (thinkingRef.current
+              ? 1.18
+              : 0.92);
+
+          /*
+           * Main glow.
+           */
+          ctx.beginPath();
+          ctx.moveTo(previousX, previousY);
+          ctx.lineTo(x, y);
+
+          ctx.lineWidth =
+            s.thickness *
+            (thinkingRef.current
+              ? 1.15
+              : 1);
+
+          ctx.strokeStyle =
+            `rgba(255, ${105 + Math.floor(
+              progress * 90
+            )}, ${25 + Math.floor(
+              progress * 25
+            )}, ${alpha})`;
+
+          ctx.shadowBlur =
+            progress < 0.45
+              ? 7
+              : 3;
+
+          ctx.shadowColor =
+            "rgba(255, 80, 8, 0.8)";
+
+          ctx.stroke();
+
+          /*
+           * Fine bright filament over the glow.
+           */
+          if (
+            j % 2 === 0 &&
+            s.brightness > 0.42
+          ) {
+            ctx.beginPath();
+            ctx.moveTo(
+              previousX,
+              previousY
+            );
+            ctx.lineTo(x, y);
+
+            ctx.lineWidth =
+              Math.max(
+                0.22,
+                s.thickness * 0.32
+              );
+
+            ctx.strokeStyle =
+              `rgba(255, 185, 105, ${
+                alpha * 0.82
+              })`;
+
+            ctx.shadowBlur = 2;
+            ctx.shadowColor =
+              "rgba(255, 120, 30, 0.8)";
+
+            ctx.stroke();
+          }
+
+          previousX = x;
+          previousY = y;
+
+          /*
+           * Random-looking branches.
+           * These are what stop the structure from becoming
+           * a circular/radial solar-system shape.
+           */
+          if (
+            j > 2 &&
+            randomBranch(
+              s.seed,
+              j
+            )
+          ) {
+            drawBranch(
+              previousX,
+              previousY,
+              angle,
+              radius,
+              baseRadius,
+              t,
+              s
+            );
+          }
+        }
+      }
+
+      /*
+       * -----------------------------------------------------
+       * FLOATING ELECTRICAL FRAGMENTS
+       * -----------------------------------------------------
+       */
+
+      for (let i = 0; i < sparks.length; i++) {
+        const p = sparks[i];
+
+        const pulse =
+          0.65 +
+          Math.sin(
+            t * p.speed +
+              p.phase
+          ) *
+            0.35;
+
+        const radius =
+          baseRadius *
+          (1.2 + p.radius * 4.7);
+
+        const angle =
+          p.angle +
+          Math.sin(
+            t * 0.25 +
+              p.phase
+          ) *
+            0.04;
+
+        const x =
+          cx +
+          Math.cos(angle) *
+            radius;
+
+        const y =
+          cy +
+          Math.sin(angle) *
+            radius;
+
+        const x2 =
+          x +
+          Math.cos(angle + 0.8) *
+            p.length;
+
+        const y2 =
+          y +
+          Math.sin(angle + 0.8) *
+            p.length;
+
+        ctx.beginPath();
+
+        ctx.moveTo(x, y);
+        ctx.lineTo(x2, y2);
+
+        ctx.lineWidth =
+          p.size * 0.45;
+
+        ctx.strokeStyle =
+          `rgba(255, ${
+            120 + Math.floor(
+              pulse * 100
+            )
+          }, 55, ${
+            p.brightness *
+            pulse *
+            0.72
+          })`;
+
+        ctx.shadowBlur = 4;
+        ctx.shadowColor =
+          "rgba(255, 90, 10, 0.8)";
+
+        ctx.stroke();
+      }
+
+      ctx.restore();
+
+      /*
+       * -----------------------------------------------------
+       * HOT CENTRAL CORE
+       * -----------------------------------------------------
+       *
+       * This is deliberately much smaller than the surrounding
+       * energy structure.
+       */
+
+      const pulse =
+        1 +
+        Math.sin(t * (
+          thinkingRef.current
+            ? 5.2
+            : 2.4
+        )) *
+          0.075;
+
+      const r =
+        baseRadius *
+        pulse;
+
+      /*
+       * Outer glow.
+       */
+      const glow = ctx.createRadialGradient(
         cx,
         cy,
-        baseScale *
-          (thinking ? 0.095 : 0.075),
-        energy
+        0,
+        cx,
+        cy,
+        r * 4.2
       );
+
+      glow.addColorStop(
+        0,
+        "rgba(255, 245, 215, 0.95)"
+      );
+
+      glow.addColorStop(
+        0.10,
+        "rgba(255, 220, 150, 0.95)"
+      );
+
+      glow.addColorStop(
+        0.23,
+        "rgba(255, 130, 25, 0.72)"
+      );
+
+      glow.addColorStop(
+        0.48,
+        "rgba(255, 72, 5, 0.22)"
+      );
+
+      glow.addColorStop(
+        1,
+        "rgba(255, 40, 0, 0)"
+      );
+
+      ctx.save();
+
+      ctx.globalCompositeOperation =
+        "lighter";
+
+      ctx.fillStyle = glow;
+
+      ctx.beginPath();
+
+      ctx.arc(
+        cx,
+        cy,
+        r * 4.2,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      /*
+       * White-hot center.
+       */
+      const hot = ctx.createRadialGradient(
+        cx - r * 0.2,
+        cy - r * 0.2,
+        0,
+        cx,
+        cy,
+        r
+      );
+
+      hot.addColorStop(
+        0,
+        "#ffffff"
+      );
+
+      hot.addColorStop(
+        0.3,
+        "#fff6df"
+      );
+
+      hot.addColorStop(
+        0.62,
+        "#ffbd52"
+      );
+
+      hot.addColorStop(
+        1,
+        "#ff5b08"
+      );
+
+      ctx.fillStyle = hot;
+
+      ctx.shadowBlur =
+        thinkingRef.current
+          ? 35
+          : 25;
+
+      ctx.shadowColor =
+        "rgba(255, 90, 5, 0.95)";
+
+      ctx.beginPath();
+
+      ctx.arc(
+        cx,
+        cy,
+        r,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      ctx.restore();
 
       animationRef.current =
-        requestAnimationFrame(draw);
+        requestAnimationFrame(drawCore);
     }
 
-    rebuild();
+    function randomBranch(
+      strandSeed,
+      segment
+    ) {
+      const value =
+        Math.sin(
+          strandSeed * 12.9898 +
+            segment * 78.233
+        ) *
+        43758.5453;
 
-    const resizeObserver =
-      new ResizeObserver(rebuild);
+      return (
+        value -
+          Math.floor(value) >
+        0.925
+      );
+    }
 
-    resizeObserver.observe(canvas);
+    function drawBranch(
+      startX,
+      startY,
+      parentAngle,
+      parentRadius,
+      baseRadius,
+      time,
+      strand
+    ) {
+      let x = startX;
+      let y = startY;
+
+      let angle =
+        parentAngle +
+        (Math.sin(
+          strand.seed * 8.2 +
+            parentRadius
+        ) *
+          1.7);
+
+      const branchLength =
+        2 +
+        Math.abs(
+          Math.sin(
+            strand.seed +
+              parentRadius
+          )
+        ) *
+          8;
+
+      ctx.beginPath();
+
+      ctx.moveTo(x, y);
+
+      for (
+        let i = 0;
+        i < 5;
+        i++
+      ) {
+        angle +=
+          Math.sin(
+            time * 1.8 +
+              strand.seed +
+              i * 2.7
+          ) *
+          0.17;
+
+        const step =
+          branchLength /
+          5;
+
+        x +=
+          Math.cos(angle) *
+          step;
+
+        y +=
+          Math.sin(angle) *
+          step;
+
+        ctx.lineTo(x, y);
+      }
+
+      ctx.lineWidth = 0.35;
+
+      ctx.strokeStyle =
+        "rgba(255, 130, 45, 0.55)";
+
+      ctx.shadowBlur = 3;
+
+      ctx.shadowColor =
+        "rgba(255, 80, 10, 0.75)";
+
+      ctx.stroke();
+    }
 
     animationRef.current =
-      requestAnimationFrame(draw);
+      requestAnimationFrame(drawCore);
 
     return () => {
-      resizeObserver.disconnect();
+      running = false;
 
-      if (animationRef.current) {
-        cancelAnimationFrame(
-          animationRef.current
-        );
-      }
+      cancelAnimationFrame(
+        animationRef.current
+      );
+
+      window.removeEventListener(
+        "resize",
+        resize
+      );
+
+      resizeObserver.disconnect();
     };
-  }, [thinking]);
+  }, []);
 
   return (
     <div
-      className={`energy-core ${
-        thinking ? "energy-thinking" : ""
+      className={`jarvis-core ${
+        thinking ? "thinking" : ""
       }`}
     >
       <canvas ref={canvasRef} />
     </div>
   );
 }
+
+/* =========================================================
+   MAIN APPLICATION
+   ========================================================= */
 
 export default function Home() {
   const [booted, setBooted] =
@@ -597,7 +796,7 @@ export default function Home() {
       const timer =
         setTimeout(() => {
           setVisibleBootLines(
-            (value) => value + 1
+            (n) => n + 1
           );
         }, 380);
 
@@ -615,15 +814,14 @@ export default function Home() {
   }, [visibleBootLines]);
 
   /*
-   * Auto-scroll chat.
+   * Scroll chat.
    */
   useEffect(() => {
-    const log = logRef.current;
+    if (!logRef.current) return;
 
-    if (!log) return;
-
-    log.scrollTo({
-      top: log.scrollHeight,
+    logRef.current.scrollTo({
+      top:
+        logRef.current.scrollHeight,
       behavior: "smooth",
     });
   }, [messages, loading]);
@@ -634,14 +832,10 @@ export default function Home() {
   useEffect(() => {
     const SpeechRecognition =
       typeof window !== "undefined" &&
-      (
-        window.SpeechRecognition ||
-        window.webkitSpeechRecognition
-      );
+      (window.SpeechRecognition ||
+        window.webkitSpeechRecognition);
 
-    if (!SpeechRecognition) {
-      return;
-    }
+    if (!SpeechRecognition) return;
 
     const recognition =
       new SpeechRecognition();
@@ -652,7 +846,8 @@ export default function Home() {
 
     recognition.onresult = (event) => {
       const transcript =
-        event.results[0][0].transcript;
+        event.results[0][0]
+          .transcript;
 
       setInput(transcript);
     };
@@ -669,6 +864,14 @@ export default function Home() {
         alert(
           "Microphone access was blocked. Please allow microphone access for this website."
         );
+      } else if (
+        event.error !==
+        "no-speech"
+      ) {
+        alert(
+          "Voice input error: " +
+            event.error
+        );
       }
     };
 
@@ -680,36 +883,26 @@ export default function Home() {
       recognition;
 
     return () => {
-      try {
-        recognition.stop();
-      } catch {}
+      recognition.abort();
     };
   }, []);
 
   function toggleMic() {
-    const recognition =
-      recognitionRef.current;
-
-    if (!recognition) {
+    if (!recognitionRef.current) {
       alert(
-        "Voice input is not supported by this browser. Try Chrome or Edge."
+        "Voice input is not supported in this browser. Try Chrome or Edge."
       );
-
       return;
     }
 
     if (listening) {
-      try {
-        recognition.stop();
-      } catch {}
-
+      recognitionRef.current.stop();
       setListening(false);
-
       return;
     }
 
     try {
-      recognition.start();
+      recognitionRef.current.start();
       setListening(true);
     } catch {
       setListening(false);
@@ -717,22 +910,23 @@ export default function Home() {
   }
 
   async function speak(text) {
-    if (!voiceOn) {
-      return;
-    }
+    if (!voiceOn) return;
 
     try {
       const response =
-        await fetch("/api/speak", {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            text,
-          }),
-        });
+        await fetch(
+          "/api/speak",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              text,
+            }),
+          }
+        );
 
       if (!response.ok) {
         const data =
@@ -742,10 +936,8 @@ export default function Home() {
 
         alert(
           "Voice playback failed: " +
-            (
-              data?.error ||
-              `HTTP ${response.status}`
-            )
+            (data?.error ||
+              `HTTP ${response.status}`)
         );
 
         return;
@@ -777,12 +969,7 @@ export default function Home() {
     const text =
       input.trim();
 
-    if (
-      !text ||
-      loading
-    ) {
-      return;
-    }
+    if (!text || loading) return;
 
     const nextMessages = [
       ...messages,
@@ -798,22 +985,24 @@ export default function Home() {
 
     try {
       const response =
-        await fetch("/api/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            messages:
-              nextMessages,
-          }),
-        });
+        await fetch(
+          "/api/chat",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              messages:
+                nextMessages,
+            }),
+          }
+        );
 
       const data =
         await response
-          .json()
-          .catch(() => ({}));
+          .json();
 
       if (!response.ok) {
         setMessages((current) => [
@@ -826,19 +1015,17 @@ export default function Home() {
             error: true,
           },
         ]);
+      } else {
+        setMessages((current) => [
+          ...current,
+          {
+            role: "assistant",
+            content: data.reply,
+          },
+        ]);
 
-        return;
+        speak(data.reply);
       }
-
-      setMessages((current) => [
-        ...current,
-        {
-          role: "assistant",
-          content: data.reply,
-        },
-      ]);
-
-      speak(data.reply);
     } catch {
       setMessages((current) => [
         ...current,
@@ -889,6 +1076,8 @@ export default function Home() {
 
             {loading
               ? "PROCESSING"
+              : listening
+              ? "LISTENING"
               : "ONLINE"}
           </div>
         </div>
@@ -912,58 +1101,62 @@ export default function Home() {
         </button>
       </header>
 
-      <section className="core-stage">
-        <EnergyCore
-          thinking={loading}
-        />
-      </section>
-
-      <section
-        className="log"
-        ref={logRef}
-      >
-        {messages.map(
-          (message, index) => (
-            <div
-              key={index}
-              className={`msg-row ${
-                message.role
-              }`}
-            >
-              <div className="msg-label">
-                {message.role ===
-                "user"
-                  ? "YOU"
-                  : "JARVIS"}
-              </div>
-
+      <section className="chat-area">
+        <div
+          className="log"
+          ref={logRef}
+        >
+          {messages.map(
+            (message, index) => (
               <div
-                className={`bubble ${
-                  message.error
-                    ? "error"
-                    : ""
+                key={index}
+                className={`message ${
+                  message.role
                 }`}
               >
-                {message.content}
+                <div className="msg-label">
+                  {message.role ===
+                  "user"
+                    ? "YOU"
+                    : "JARVIS"}
+                </div>
+
+                <div
+                  className={`bubble ${
+                    message.error
+                      ? "error"
+                      : ""
+                  }`}
+                >
+                  {
+                    message.content
+                  }
+                </div>
+              </div>
+            )
+          )}
+
+          {loading && (
+            <div className="message assistant">
+              <div className="msg-label">
+                JARVIS
+              </div>
+
+              <div className="bubble thinking-row">
+                <span />
+                <span />
+                <span />
               </div>
             </div>
-          )
-        )}
-
-        {loading && (
-          <div className="msg-row assistant">
-            <div className="msg-label">
-              JARVIS
-            </div>
-
-            <div className="bubble thinking-row">
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </section>
+
+      <div className="core-stage">
+        <JarvisCore
+          thinking={loading}
+        />
+      </div>
 
       <footer className="input-bar">
         <button
@@ -991,6 +1184,7 @@ export default function Home() {
               event.key ===
               "Enter"
             ) {
+              event.preventDefault();
               sendMessage();
             }
           }}
