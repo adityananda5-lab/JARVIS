@@ -2,913 +2,817 @@
 
 import { useEffect, useRef, useState } from "react";
 
+/* =========================================================
+   BOOT SEQUENCE
+========================================================= */
+
 const BOOT_LINES = [
   { text: "INITIALIZING J.A.R.V.I.S. CORE...", dim: false },
   { text: "loading language subsystem", dim: true },
   { text: "calibrating voice interface", dim: true },
+  { text: "mapping cognitive pathways", dim: true },
   { text: "ALL SYSTEMS NOMINAL", dim: false },
 ];
 
 /* =========================================================
-   ENERGY CORE
-   ========================================================= */
+   JARVIS ENERGY CORE
+   Canvas-based instead of SVG.
 
-function EnergyCore({ thinking }) {
+   Important:
+   There are intentionally NO clean orbital rings here.
+   The visual is constructed from:
+   - particles
+   - irregular wire fragments
+   - radial energy traces
+   - broken arcs
+   - depth layers
+   - a central plasma core
+========================================================= */
+
+function EnergyCore({ active, listening }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", {
+      alpha: true,
+      desynchronized: true,
+    });
 
-    let width = 0;
-    let height = 0;
-    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    if (!ctx) return;
 
     let animationFrame;
-
-    const particles = [];
-    const filaments = [];
-    const arcs = [];
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
 
     const TAU = Math.PI * 2;
 
     /*
-      Deterministic pseudo-random generator.
-      This gives us a chaotic-looking field without
-      changing unpredictably between renders.
+      Deterministic random generator.
+      This makes the geometry stable instead of changing
+      completely every time the component renders.
     */
-    let seed = 928371;
+    let seed = 834723;
 
     function random() {
-      seed = (seed * 16807) % 2147483647;
-      return (seed - 1) / 2147483646;
+      seed |= 0;
+      seed = (seed + 0x6d2b79f5) | 0;
+
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     }
 
+    function randomRange(min, max) {
+      return min + random() * (max - min);
+    }
+
+    /* -----------------------------------------------------
+       Particle field
+    ----------------------------------------------------- */
+
+    const particles = [];
+    const shards = [];
+    const rays = [];
+    const brokenArcs = [];
+
+    const PARTICLE_COUNT = 520;
+    const SHARD_COUNT = 145;
+    const RAY_COUNT = 105;
+    const ARC_COUNT = 12;
+
+    function createParticles() {
+      particles.length = 0;
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const angle = random() * TAU;
+
+        /*
+          Cubic distribution keeps a lot of particles close
+          to the reactor while still allowing outer particles.
+        */
+        const radius =
+          0.08 +
+          Math.pow(random(), 0.48) * 0.82;
+
+        const depth = randomRange(-1, 1);
+
+        particles.push({
+          angle,
+          radius,
+          depth,
+
+          size: randomRange(0.35, 1.65),
+          alpha: randomRange(0.28, 0.95),
+
+          speed: randomRange(0.08, 0.42) *
+            (random() > 0.5 ? 1 : -1),
+
+          wobble: randomRange(0.2, 1.5),
+          phase: random() * TAU,
+
+          warm: random() > 0.18,
+        });
+      }
+    }
+
+    /* -----------------------------------------------------
+       Chaotic angular wireframe fragments
+    ----------------------------------------------------- */
+
+    function createShards() {
+      shards.length = 0;
+
+      for (let i = 0; i < SHARD_COUNT; i++) {
+        const angle = random() * TAU;
+
+        const startRadius = randomRange(0.15, 0.78);
+        const pointCount = Math.floor(randomRange(3, 8));
+
+        const points = [];
+
+        let currentAngle = angle;
+        let currentRadius = startRadius;
+
+        for (let p = 0; p < pointCount; p++) {
+          /*
+            Angular movement deliberately jumps around.
+            This creates the broken holographic geometry
+            seen in the reference instead of clean spokes.
+          */
+          currentAngle += randomRange(-0.55, 0.55);
+          currentRadius += randomRange(-0.14, 0.20);
+
+          currentRadius = Math.max(
+            0.08,
+            Math.min(1.18, currentRadius)
+          );
+
+          points.push({
+            angle: currentAngle,
+            radius: currentRadius,
+            offset: randomRange(-0.035, 0.035),
+          });
+        }
+
+        shards.push({
+          points,
+          rotation: randomRange(-0.02, 0.02),
+          speed: randomRange(-0.12, 0.12),
+          alpha: randomRange(0.16, 0.68),
+          width: randomRange(0.35, 1.15),
+          phase: random() * TAU,
+          pulse: randomRange(0.5, 2),
+        });
+      }
+    }
+
+    /* -----------------------------------------------------
+       Irregular outward energy traces
+    ----------------------------------------------------- */
+
+    function createRays() {
+      rays.length = 0;
+
+      for (let i = 0; i < RAY_COUNT; i++) {
+        const angle = random() * TAU;
+
+        const start = randomRange(0.10, 0.32);
+        const length = randomRange(0.25, 1.05);
+
+        rays.push({
+          angle,
+          start,
+          length,
+
+          bend: randomRange(-0.18, 0.18),
+
+          alpha: randomRange(0.08, 0.42),
+          width: randomRange(0.25, 0.85),
+
+          speed: randomRange(0.04, 0.20),
+          phase: random() * TAU,
+        });
+      }
+    }
+
+    /* -----------------------------------------------------
+       Broken arcs
+       These are intentionally sparse and irregular.
+       They are NOT orbital rings.
+    ----------------------------------------------------- */
+
+    function createBrokenArcs() {
+      brokenArcs.length = 0;
+
+      for (let i = 0; i < ARC_COUNT; i++) {
+        brokenArcs.push({
+          angle: random() * TAU,
+          radius: randomRange(0.42, 0.95),
+          start: randomRange(0, TAU),
+          length: randomRange(0.20, 0.85),
+          width: randomRange(0.3, 0.85),
+          alpha: randomRange(0.15, 0.38),
+          speed: randomRange(-0.035, 0.035),
+          eccentricity: randomRange(0.72, 1.08),
+        });
+      }
+    }
+
+    createParticles();
+    createShards();
+    createRays();
+    createBrokenArcs();
+
+    /* -----------------------------------------------------
+       Resize
+    ----------------------------------------------------- */
+
     function resize() {
-      width = canvas.clientWidth;
-      height = canvas.clientHeight;
+      const rect = canvas.getBoundingClientRect();
+
+      width = Math.max(1, rect.width);
+      height = Math.max(1, rect.height);
 
       dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    /*
-      Particle field
-    */
-    function createParticles() {
-      particles.length = 0;
+    resize();
 
-      const count = 900;
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(canvas);
 
-      for (let i = 0; i < count; i++) {
-        const angle = random() * TAU;
+    /* -----------------------------------------------------
+       Drawing helpers
+    ----------------------------------------------------- */
 
-        /*
-          Most particles stay close to the energy core,
-          while some are thrown much farther away.
-        */
-        const distance =
-          Math.pow(random(), 0.72) *
-          Math.min(width, height) *
-          0.43;
+    function pointFromPolar(angle, radius, time, depth = 0) {
+      const maxRadius = Math.min(width, height) * 0.49;
 
-        particles.push({
-          angle,
-          distance,
+      /*
+        Very subtle turbulence.
+        This prevents the visual from becoming a perfect circle.
+      */
+      const turbulence =
+        Math.sin(time * 0.00055 + angle * 4.2 + depth * 3) *
+        maxRadius *
+        0.008;
 
-          size: 0.25 + random() * 1.7,
+      const r = radius * maxRadius + turbulence;
 
-          speed:
-            (0.0007 + random() * 0.0025) *
-            (random() > 0.5 ? 1 : -1),
+      /*
+        Depth compresses the Y axis slightly.
+        This gives the field a holographic 3D impression.
+      */
+      const depthScale = 0.88 + depth * 0.08;
 
-          drift:
-            (random() - 0.5) *
-            0.035,
-
-          alpha: 0.18 + random() * 0.72,
-
-          phase: random() * TAU,
-
-          warm: random(),
-
-          radial:
-            (random() - 0.5) *
-            0.5,
-        });
-      }
+      return {
+        x: Math.cos(angle) * r,
+        y: Math.sin(angle) * r * depthScale,
+      };
     }
 
-    /*
-      Chaotic energy filaments.
-      These are NOT clean radial rays.
-    */
-    function createFilaments() {
-      filaments.length = 0;
+    function drawCore(cx, cy, time, intensity) {
+      const coreSize =
+        Math.min(width, height) *
+        (0.038 + intensity * 0.012);
 
-      const count = 85;
-
-      for (let i = 0; i < count; i++) {
-        const points = [];
-
-        const baseAngle = random() * TAU;
-
-        const length =
-          Math.min(width, height) *
-          (0.18 + random() * 0.38);
-
-        const segments = 12 + Math.floor(random() * 15);
-
-        for (let j = 0; j <= segments; j++) {
-          const progress = j / segments;
-
-          const radius =
-            progress *
-            length *
-            (0.65 + random() * 0.5);
-
-          const wobble =
-            Math.sin(progress * 11 + random() * 5) *
-            (10 + random() * 20);
-
-          const angle =
-            baseAngle +
-            wobble * 0.008 +
-            (random() - 0.5) * 0.08;
-
-          points.push({
-            radius,
-            angle,
-            progress,
-          });
-        }
-
-        filaments.push({
-          points,
-
-          width:
-            0.3 + random() * 1.2,
-
-          alpha:
-            0.08 + random() * 0.35,
-
-          speed:
-            0.002 + random() * 0.006,
-
-          phase: random() * TAU,
-        });
-      }
-    }
-
-    /*
-      Broken irregular arcs.
-      These create the fragmented JARVIS-machine look.
-    */
-    function createArcs() {
-      arcs.length = 0;
-
-      const count = 42;
-
-      for (let i = 0; i < count; i++) {
-        arcs.push({
-          radius:
-            Math.min(width, height) *
-            (0.13 + random() * 0.32),
-
-          start:
-            random() * TAU,
-
-          length:
-            0.12 + random() * 0.7,
-
-          width:
-            0.4 + random() * 1.4,
-
-          alpha:
-            0.1 + random() * 0.5,
-
-          speed:
-            (random() - 0.5) * 0.006,
-
-          phase:
-            random() * TAU,
-        });
-      }
-    }
-
-    function initialize() {
-      seed = 928371;
-
-      createParticles();
-      createFilaments();
-      createArcs();
-    }
-
-    function drawGlow(cx, cy, radius, alpha) {
-      const gradient = ctx.createRadialGradient(
+      /* Outer atmospheric glow */
+      const outer = ctx.createRadialGradient(
         cx,
         cy,
         0,
         cx,
         cy,
-        radius
+        coreSize * 7
       );
 
-      gradient.addColorStop(
+      outer.addColorStop(0, `rgba(255, 232, 190, ${0.55 * intensity})`);
+      outer.addColorStop(0.16, `rgba(255, 166, 55, ${0.42 * intensity})`);
+      outer.addColorStop(0.42, `rgba(255, 100, 10, ${0.16 * intensity})`);
+      outer.addColorStop(1, "rgba(255, 60, 0, 0)");
+
+      ctx.fillStyle = outer;
+      ctx.beginPath();
+      ctx.arc(cx, cy, coreSize * 7, 0, TAU);
+      ctx.fill();
+
+      /* Inner orange plasma */
+      const glow = ctx.createRadialGradient(
+        cx - coreSize * 0.12,
+        cy - coreSize * 0.12,
         0,
-        `rgba(255,255,245,${alpha})`
+        cx,
+        cy,
+        coreSize * 1.8
       );
 
-      gradient.addColorStop(
-        0.08,
-        `rgba(255,242,195,${alpha * 0.95})`
-      );
+      glow.addColorStop(0, "#ffffff");
+      glow.addColorStop(0.22, "#fff5dc");
+      glow.addColorStop(0.48, "#ffc15a");
+      glow.addColorStop(0.72, "#ff7a0a");
+      glow.addColorStop(1, "rgba(255, 71, 0, 0)");
 
-      gradient.addColorStop(
-        0.25,
-        `rgba(255,180,65,${alpha * 0.75})`
-      );
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, coreSize * 1.8, 0, TAU);
+      ctx.fill();
 
-      gradient.addColorStop(
-        0.5,
-        `rgba(255,105,15,${alpha * 0.32})`
-      );
-
-      gradient.addColorStop(
-        1,
-        "rgba(255,70,0,0)"
-      );
-
-      ctx.fillStyle = gradient;
+      /* White hot center */
+      ctx.fillStyle = "#fffdf5";
+      ctx.shadowColor = "#fff1c9";
+      ctx.shadowBlur = 20 + intensity * 20;
 
       ctx.beginPath();
-
-      ctx.arc(cx, cy, radius, 0, TAU);
-
+      ctx.arc(cx, cy, coreSize * 0.62, 0, TAU);
       ctx.fill();
+
+      ctx.shadowBlur = 0;
+
+      /*
+        Small plasma tendrils around the core.
+      */
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+
+      for (let i = 0; i < 20; i++) {
+        const a =
+          (i / 20) * TAU +
+          Math.sin(time * 0.001 + i) * 0.15;
+
+        const innerR = coreSize * 1.15;
+        const outerR =
+          coreSize *
+          randomRange(2.1, 3.6);
+
+        const wobble =
+          Math.sin(time * 0.002 + i * 2.4) * 3;
+
+        ctx.strokeStyle =
+          `rgba(255, ${125 + (i % 3) * 25}, 35, ${0.10 + intensity * 0.10})`;
+
+        ctx.lineWidth = 0.45;
+
+        ctx.beginPath();
+        ctx.moveTo(
+          cx + Math.cos(a) * innerR,
+          cy + Math.sin(a) * innerR
+        );
+
+        ctx.lineTo(
+          cx + Math.cos(a + 0.08) * outerR + wobble,
+          cy + Math.sin(a + 0.08) * outerR
+        );
+
+        ctx.stroke();
+      }
+
+      ctx.restore();
     }
 
-    function draw(timestamp) {
-      const time = timestamp * 0.001;
+    /* -----------------------------------------------------
+       Main render loop
+    ----------------------------------------------------- */
+
+    function render(time) {
+      /*
+        State intensity:
+        idle       = 1
+        listening  = 1.35
+        processing = 1.75
+      */
+      const intensity = active
+        ? 1.75
+        : listening
+        ? 1.35
+        : 1;
 
       ctx.clearRect(0, 0, width, height);
 
       const cx = width / 2;
       const cy = height / 2;
 
-      /*
-        Slightly off-center energy makes it feel less
-        like a perfect astronomical object.
-      */
-      const coreX =
-        cx +
-        Math.sin(time * 0.4) * width * 0.006;
-
-      const coreY =
-        cy +
-        Math.cos(time * 0.31) * height * 0.006;
-
-      const minSize = Math.min(width, height);
-
-      /*
-        Processing mode dramatically increases energy.
-      */
-      const intensity = thinking ? 1.8 : 1;
-
-      /*
-        Large ambient glow.
-      */
-      drawGlow(
-        coreX,
-        coreY,
-        minSize * (thinking ? 0.32 : 0.25),
-        thinking ? 0.24 : 0.16
+      /* Very faint atmospheric background */
+      const atmosphere = ctx.createRadialGradient(
+        cx,
+        cy,
+        0,
+        cx,
+        cy,
+        Math.min(width, height) * 0.52
       );
 
-      /*
-        ---------------------------------------------------
-        BROKEN ENERGY ARCS
-        ---------------------------------------------------
-      */
+      atmosphere.addColorStop(
+        0,
+        `rgba(255, 106, 20, ${0.045 * intensity})`
+      );
+
+      atmosphere.addColorStop(
+        0.45,
+        `rgba(255, 72, 10, ${0.018 * intensity})`
+      );
+
+      atmosphere.addColorStop(1, "rgba(0,0,0,0)");
+
+      ctx.fillStyle = atmosphere;
+      ctx.fillRect(0, 0, width, height);
+
+      /* ---------------------------------------------------
+         Irregular energy rays
+      --------------------------------------------------- */
 
       ctx.save();
+      ctx.translate(cx, cy);
+      ctx.globalCompositeOperation = "lighter";
 
-      arcs.forEach((arc, index) => {
-        arc.start += arc.speed * intensity;
+      for (let i = 0; i < rays.length; i++) {
+        const r = rays[i];
+
+        const animatedAngle =
+          r.angle +
+          time * 0.00002 * r.speed * intensity;
 
         const pulse =
-          0.65 +
-          Math.sin(time * 2 + arc.phase) * 0.35;
+          0.7 +
+          Math.sin(
+            time * 0.001 * (0.8 + r.speed * 4) +
+              r.phase
+          ) *
+            0.3;
 
-        ctx.beginPath();
-
-        ctx.arc(
-          coreX,
-          coreY,
-          arc.radius *
-            (thinking
-              ? 1.08 + Math.sin(time + index) * 0.03
-              : 1),
-          arc.start,
-          arc.start + arc.length
+        const startPoint = pointFromPolar(
+          animatedAngle,
+          r.start,
+          time,
+          0
         );
 
-        ctx.strokeStyle = `rgba(
-          ${255},
-          ${145 + Math.floor(pulse * 80)},
-          ${40 + Math.floor(pulse * 40)},
-          ${arc.alpha * pulse * intensity}
-        )`;
+        const endPoint = pointFromPolar(
+          animatedAngle + r.bend,
+          r.start + r.length * pulse,
+          time,
+          0
+        );
 
-        ctx.lineWidth =
-          arc.width *
-          (thinking ? 1.3 : 1);
+        ctx.strokeStyle = `rgba(255, ${
+          95 + Math.floor(r.alpha * 100)
+        }, 20, ${
+          r.alpha * intensity
+        })`;
 
-        ctx.shadowBlur = thinking ? 10 : 4;
-        ctx.shadowColor = "rgba(255,110,20,0.7)";
+        ctx.lineWidth = r.width;
 
+        ctx.beginPath();
+        ctx.moveTo(startPoint.x, startPoint.y);
+
+        /*
+          A kink halfway through the line.
+          This is important: straight spokes look like a sun.
+        */
+        const middle = pointFromPolar(
+          animatedAngle + r.bend * 0.4,
+          r.start + r.length * pulse * 0.48,
+          time,
+          0
+        );
+
+        ctx.lineTo(middle.x, middle.y);
+        ctx.lineTo(endPoint.x, endPoint.y);
         ctx.stroke();
-      });
+      }
 
       ctx.restore();
 
-      /*
-        ---------------------------------------------------
-        CHAOTIC FILAMENTS
-        ---------------------------------------------------
-      */
+      /* ---------------------------------------------------
+         Chaotic wireframe fragments
+      --------------------------------------------------- */
 
       ctx.save();
+      ctx.translate(cx, cy);
+      ctx.globalCompositeOperation = "lighter";
 
-      filaments.forEach((filament, index) => {
+      for (let i = 0; i < shards.length; i++) {
+        const shard = shards[i];
+
         const rotation =
+          shard.rotation +
+          time * 0.00001 * shard.speed * intensity;
+
+        const flicker =
+          0.55 +
           Math.sin(
-            time * filament.speed * 35 +
-              filament.phase
+            time * 0.001 * shard.pulse +
+              shard.phase
           ) *
-          0.08;
+            0.45;
 
         ctx.beginPath();
 
-        filament.points.forEach((point, pIndex) => {
-          const wobble =
-            Math.sin(
-              time * 3 +
-                pIndex * 0.9 +
-                filament.phase
-            ) *
-            (thinking ? 7 : 3);
+        for (let p = 0; p < shard.points.length; p++) {
+          const point = shard.points[p];
 
           const angle =
             point.angle +
             rotation +
-            wobble * 0.003;
+            Math.sin(
+              time * 0.0005 +
+                p * 1.7 +
+                shard.phase
+            ) *
+              0.012;
 
           const radius =
-            point.radius *
-            (thinking
-              ? 1.08 + Math.sin(time * 2 + index) * 0.04
-              : 1);
-
-          const x =
-            coreX +
-            Math.cos(angle) * radius;
-
-          const y =
-            coreY +
-            Math.sin(angle) * radius;
-
-          if (pIndex === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
-        });
-
-        const flicker =
-          0.55 +
-          Math.sin(time * 5 + filament.phase) *
-            0.45;
-
-        ctx.strokeStyle = `rgba(
-          255,
-          ${105 + Math.floor(flicker * 100)},
-          ${20 + Math.floor(flicker * 50)},
-          ${filament.alpha *
-            flicker *
-            intensity}
-        )`;
-
-        ctx.lineWidth =
-          filament.width *
-          (thinking ? 1.5 : 1);
-
-        ctx.shadowBlur = thinking ? 14 : 5;
-        ctx.shadowColor =
-          "rgba(255,100,10,0.8)";
-
-        ctx.stroke();
-      });
-
-      ctx.restore();
-
-      /*
-        ---------------------------------------------------
-        PARTICLES
-        ---------------------------------------------------
-      */
-
-      ctx.save();
-
-      ctx.globalCompositeOperation = "lighter";
-
-      particles.forEach((particle, index) => {
-        particle.angle +=
-          particle.speed *
-          intensity;
-
-        particle.distance +=
-          particle.radial *
-          0.015 *
-          intensity;
-
-        const breathing =
-          1 +
-          Math.sin(
-            time * 2.2 +
-              particle.phase
-          ) *
-            0.04;
-
-        let radius =
-          particle.distance *
-          breathing;
-
-        /*
-          Processing throws particles outward.
-        */
-        if (thinking) {
-          radius *=
-            1 +
+            point.radius +
             Math.sin(
-              time * 1.8 +
-                particle.phase
+              time * 0.0008 +
+                p * 2.1 +
+                shard.phase
             ) *
-              0.08;
-        }
+              0.018;
 
-        const x =
-          coreX +
-          Math.cos(particle.angle) *
-            radius;
-
-        const y =
-          coreY +
-          Math.sin(particle.angle) *
-            radius;
-
-        const flicker =
-          0.55 +
-          Math.sin(
-            time * 3 +
-              particle.phase
-          ) *
-            0.45;
-
-        const alpha =
-          particle.alpha *
-          flicker *
-          intensity;
-
-        const size =
-          particle.size *
-          (thinking ? 1.2 : 1);
-
-        /*
-          Tiny particle.
-        */
-        ctx.beginPath();
-
-        ctx.arc(
-          x,
-          y,
-          size,
-          0,
-          TAU
-        );
-
-        ctx.fillStyle =
-          particle.warm > 0.5
-            ? `rgba(255,196,110,${alpha})`
-            : `rgba(255,116,25,${alpha})`;
-
-        ctx.shadowBlur =
-          size > 1 ? 8 : 3;
-
-        ctx.shadowColor =
-          "rgba(255,120,25,0.8)";
-
-        ctx.fill();
-
-        /*
-          A small percentage become streak particles.
-        */
-        if (
-          index % 17 === 0 &&
-          radius > minSize * 0.1
-        ) {
-          const streakLength =
-            (thinking ? 20 : 9) +
-            Math.sin(
-              time * 4 +
-                particle.phase
-            ) *
-              6;
-
-          const dx =
-            Math.cos(particle.angle) *
-            streakLength;
-
-          const dy =
-            Math.sin(particle.angle) *
-            streakLength;
-
-          ctx.beginPath();
-
-          ctx.moveTo(x, y);
-
-          ctx.lineTo(
-            x + dx,
-            y + dy
+          const pos = pointFromPolar(
+            angle,
+            radius,
+            time,
+            p % 2 === 0 ? 0.5 : -0.5
           );
 
-          ctx.strokeStyle =
-            `rgba(255,145,50,${
-              alpha * 0.5
-            })`;
-
-          ctx.lineWidth =
-            size * 0.55;
-
-          ctx.stroke();
+          if (p === 0) {
+            ctx.moveTo(pos.x, pos.y);
+          } else {
+            ctx.lineTo(pos.x, pos.y);
+          }
         }
-      });
 
-      ctx.restore();
-
-      /*
-        ---------------------------------------------------
-        CENTRAL ENERGY CORE
-        ---------------------------------------------------
-      */
-
-      const pulse =
-        1 +
-        Math.sin(
-          time *
-            (thinking ? 8 : 3)
-        ) *
-          (thinking ? 0.1 : 0.045);
-
-      /*
-        Outer white-hot glow.
-      */
-      drawGlow(
-        coreX,
-        coreY,
-        minSize *
-          0.14 *
-          pulse *
-          (thinking ? 1.15 : 1),
-        thinking ? 0.75 : 0.55
-      );
-
-      /*
-        Orange plasma layer.
-      */
-      const plasma = ctx.createRadialGradient(
-        coreX,
-        coreY,
-        0,
-        coreX,
-        coreY,
-        minSize * 0.075
-      );
-
-      plasma.addColorStop(
-        0,
-        "rgba(255,255,255,1)"
-      );
-
-      plasma.addColorStop(
-        0.18,
-        "rgba(255,248,218,1)"
-      );
-
-      plasma.addColorStop(
-        0.38,
-        "rgba(255,207,111,0.98)"
-      );
-
-      plasma.addColorStop(
-        0.68,
-        "rgba(255,112,10,0.75)"
-      );
-
-      plasma.addColorStop(
-        1,
-        "rgba(255,70,0,0)"
-      );
-
-      ctx.fillStyle = plasma;
-
-      ctx.beginPath();
-
-      ctx.arc(
-        coreX,
-        coreY,
-        minSize *
-          0.075 *
-          pulse,
-        0,
-        TAU
-      );
-
-      ctx.fill();
-
-      /*
-        White-hot center.
-      */
-      const whiteRadius =
-        minSize *
-        0.028 *
-        pulse;
-
-      const whiteGlow =
-        ctx.createRadialGradient(
-          coreX,
-          coreY,
-          0,
-          coreX,
-          coreY,
-          whiteRadius
-        );
-
-      whiteGlow.addColorStop(
-        0,
-        "rgba(255,255,255,1)"
-      );
-
-      whiteGlow.addColorStop(
-        0.5,
-        "rgba(255,255,245,0.95)"
-      );
-
-      whiteGlow.addColorStop(
-        1,
-        "rgba(255,220,150,0)"
-      );
-
-      ctx.fillStyle = whiteGlow;
-
-      ctx.beginPath();
-
-      ctx.arc(
-        coreX,
-        coreY,
-        whiteRadius,
-        0,
-        TAU
-      );
-
-      ctx.fill();
-
-      /*
-        ---------------------------------------------------
-        RANDOM ENERGY IMPULSES
-        ---------------------------------------------------
-      */
-
-      ctx.save();
-
-      const impulseCount = thinking ? 38 : 18;
-
-      for (let i = 0; i < impulseCount; i++) {
-        const angle =
-          (i / impulseCount) *
-            TAU +
-          Math.sin(
-            time * 2 + i
-          ) *
-            0.15;
-
-        const inner =
-          minSize *
-          (0.04 + Math.sin(i * 4.2) * 0.015);
-
-        const outer =
-          minSize *
-          (0.11 +
-            Math.abs(
-              Math.sin(
-                i * 9.31
-              )
-            ) *
-              (thinking
-                ? 0.42
-                : 0.27));
-
-        const x1 =
-          coreX +
-          Math.cos(angle) *
-            inner;
-
-        const y1 =
-          coreY +
-          Math.sin(angle) *
-            inner;
-
-        const x2 =
-          coreX +
-          Math.cos(angle) *
-            outer;
-
-        const y2 =
-          coreY +
-          Math.sin(angle) *
-            outer;
-
-        ctx.beginPath();
-
-        ctx.moveTo(x1, y1);
-
-        /*
-          Slightly crooked impulse.
-        */
-        ctx.lineTo(
-          (x1 + x2) / 2 +
-            Math.sin(
-              time * 4 + i
-            ) *
-              8,
-          (y1 + y2) / 2 +
-            Math.cos(
-              time * 3 + i
-            ) *
-              8
-        );
-
-        ctx.lineTo(x2, y2);
+        const gold =
+          i % 5 === 0
+            ? "255, 206, 105"
+            : "255, 135, 35";
 
         ctx.strokeStyle =
-          `rgba(255,${130 + (i % 5) * 20},40,${
-            thinking ? 0.4 : 0.2
+          `rgba(${gold}, ${
+            shard.alpha * flicker * intensity
           })`;
 
         ctx.lineWidth =
-          thinking ? 1.1 : 0.7;
-
-        ctx.shadowBlur = 12;
-
-        ctx.shadowColor =
-          "rgba(255,100,20,0.8)";
+          shard.width *
+          (active ? 1.12 : 1);
 
         ctx.stroke();
       }
 
       ctx.restore();
 
+      /* ---------------------------------------------------
+         Broken arcs
+      --------------------------------------------------- */
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.globalCompositeOperation = "lighter";
+
+      for (let i = 0; i < brokenArcs.length; i++) {
+        const arc = brokenArcs[i];
+
+        const rotation =
+          arc.angle +
+          time * 0.0001 * arc.speed;
+
+        const radius =
+          arc.radius *
+          Math.min(width, height) *
+          0.49;
+
+        ctx.save();
+        ctx.rotate(rotation);
+
+        ctx.beginPath();
+
+        /*
+          Elliptical, broken and incomplete.
+          This prevents the "solar system" effect.
+        */
+        ctx.ellipse(
+          0,
+          0,
+          radius,
+          radius * arc.eccentricity,
+          0,
+          arc.start,
+          arc.start + arc.length
+        );
+
+        ctx.strokeStyle =
+          `rgba(255, 179, 71, ${
+            arc.alpha * intensity
+          })`;
+
+        ctx.lineWidth = arc.width;
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      ctx.restore();
+
+      /* ---------------------------------------------------
+         Particles
+      --------------------------------------------------- */
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.globalCompositeOperation = "lighter";
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+
+        p.angle +=
+          p.speed *
+          0.00002 *
+          intensity;
+
+        const animatedRadius =
+          p.radius +
+          Math.sin(
+            time * 0.0007 * p.wobble +
+              p.phase
+          ) *
+            0.018 *
+            intensity;
+
+        const pos = pointFromPolar(
+          p.angle,
+          animatedRadius,
+          time,
+          p.depth
+        );
+
+        /*
+          Particles closer to the camera are larger.
+        */
+        const depthSize =
+          p.size *
+          (0.72 + (p.depth + 1) * 0.28);
+
+        const flicker =
+          0.55 +
+          Math.sin(
+            time * 0.002 +
+              p.phase
+          ) *
+            0.45;
+
+        const alpha =
+          p.alpha *
+          flicker *
+          (active ? 1.22 : 1);
+
+        ctx.fillStyle = p.warm
+          ? `rgba(255, ${
+              135 + Math.floor(p.depth * 25)
+            }, 50, ${alpha})`
+          : `rgba(255, 210, 135, ${alpha})`;
+
+        ctx.beginPath();
+        ctx.arc(
+          pos.x,
+          pos.y,
+          depthSize,
+          0,
+          TAU
+        );
+        ctx.fill();
+      }
+
+      ctx.restore();
+
+      /* ---------------------------------------------------
+         Central core last, so it sits above everything.
+      --------------------------------------------------- */
+
+      drawCore(
+        cx,
+        cy,
+        time,
+        intensity
+      );
+
       animationFrame =
-        requestAnimationFrame(draw);
+        requestAnimationFrame(render);
     }
 
-    resize();
-    initialize();
-
-    window.addEventListener(
-      "resize",
-      resize
-    );
-
     animationFrame =
-      requestAnimationFrame(draw);
+      requestAnimationFrame(render);
 
     return () => {
-      cancelAnimationFrame(
-        animationFrame
-      );
-
-      window.removeEventListener(
-        "resize",
-        resize
-      );
+      cancelAnimationFrame(animationFrame);
+      resizeObserver.disconnect();
     };
-  }, [thinking]);
+  }, [active, listening]);
 
   return (
     <div
       className={`energy-core ${
-        thinking ? "processing" : ""
-      }`}
+        active ? "processing" : ""
+      } ${listening ? "listening" : ""}`}
     >
-      <canvas
-        ref={canvasRef}
-        aria-hidden="true"
-      />
+      <canvas ref={canvasRef} />
     </div>
   );
 }
 
 /* =========================================================
-   MAIN APPLICATION
-   ========================================================= */
+   MAIN APP
+========================================================= */
 
 export default function Home() {
-  const [booted, setBooted] =
-    useState(false);
-
+  const [booted, setBooted] = useState(false);
   const [visibleBootLines, setVisibleBootLines] =
     useState(0);
 
-  const [messages, setMessages] =
-    useState([
-      {
-        role: "assistant",
-        content:
-          "Good to see you. Systems are online — how can I help?",
-      },
-    ]);
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      content:
+        "Good to see you. Systems are online — how can I help?",
+    },
+  ]);
 
-  const [input, setInput] =
-    useState("");
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(false);
+  const [listening, setListening] = useState(false);
 
-  const [loading, setLoading] =
-    useState(false);
+  const logRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const audioRef = useRef(null);
 
-  const [voiceOn, setVoiceOn] =
-    useState(false);
+  /* -------------------------------------------------------
+     Boot sequence
+  ------------------------------------------------------- */
 
-  const [listening, setListening] =
-    useState(false);
-
-  const logRef =
-    useRef(null);
-
-  const recognitionRef =
-    useRef(null);
-
-  /* Boot sequence */
   useEffect(() => {
     if (
       visibleBootLines <
       BOOT_LINES.length
     ) {
-      const timer =
-        setTimeout(() => {
-          setVisibleBootLines(
-            (n) => n + 1
-          );
-        }, 380);
+      const timer = setTimeout(() => {
+        setVisibleBootLines(
+          (value) => value + 1
+        );
+      }, 380);
 
       return () =>
         clearTimeout(timer);
     }
 
-    const timer =
-      setTimeout(() => {
-        setBooted(true);
-      }, 500);
+    const timer = setTimeout(() => {
+      setBooted(true);
+    }, 500);
 
     return () =>
       clearTimeout(timer);
   }, [visibleBootLines]);
 
-  /* Auto-scroll */
-  useEffect(() => {
-    if (!logRef.current) return;
+  /* -------------------------------------------------------
+     Auto scroll
+  ------------------------------------------------------- */
 
-    logRef.current.scrollTo({
-      top:
-        logRef.current.scrollHeight,
-      behavior: "smooth",
+  useEffect(() => {
+    const log = logRef.current;
+
+    if (!log) return;
+
+    requestAnimationFrame(() => {
+      log.scrollTo({
+        top: log.scrollHeight,
+        behavior: "smooth",
+      });
     });
   }, [messages, loading]);
 
-  /* Speech recognition */
+  /* -------------------------------------------------------
+     Speech recognition
+  ------------------------------------------------------- */
+
   useEffect(() => {
     const SpeechRecognition =
-      typeof window !==
-        "undefined" &&
+      typeof window !== "undefined" &&
       (window.SpeechRecognition ||
         window.webkitSpeechRecognition);
 
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      return;
+    }
 
     const recognition =
       new SpeechRecognition();
@@ -917,25 +821,37 @@ export default function Home() {
     recognition.interimResults = false;
     recognition.lang = "en-US";
 
+    recognition.onstart = () => {
+      setListening(true);
+    };
+
     recognition.onresult = (event) => {
       const transcript =
-        event.results[0][0]
-          .transcript;
+        event.results?.[0]?.[0]?.transcript;
 
-      setInput(transcript);
+      if (transcript) {
+        setInput(transcript);
+      }
     };
 
     recognition.onerror = (event) => {
       setListening(false);
 
       if (
-        event.error ===
-          "not-allowed" ||
+        event.error === "not-allowed" ||
         event.error ===
           "service-not-allowed"
       ) {
         alert(
-          "Microphone access was blocked. Allow microphone access for this website."
+          "Microphone access was blocked. Allow microphone access for this website and try again."
+        );
+      } else if (
+        event.error !== "no-speech" &&
+        event.error !== "aborted"
+      ) {
+        alert(
+          "Voice input error: " +
+            event.error
         );
       }
     };
@@ -949,51 +865,65 @@ export default function Home() {
 
     return () => {
       try {
-        recognition.stop();
+        recognition.abort();
       } catch {}
     };
   }, []);
 
+  /* -------------------------------------------------------
+     Microphone
+  ------------------------------------------------------- */
+
   function toggleMic() {
-    if (!recognitionRef.current) {
+    const recognition =
+      recognitionRef.current;
+
+    if (!recognition) {
       alert(
         "Voice input is not supported by this browser. Try Chrome or Edge."
       );
-
       return;
     }
 
     if (listening) {
       try {
-        recognitionRef.current.stop();
+        recognition.stop();
       } catch {}
 
       setListening(false);
-
       return;
     }
 
     try {
-      recognitionRef.current.start();
+      recognition.start();
       setListening(true);
     } catch {
       setListening(false);
     }
   }
 
+  /* -------------------------------------------------------
+     Voice output
+  ------------------------------------------------------- */
+
   async function speak(text) {
-    if (!voiceOn) return;
+    if (!voiceOn || !text) {
+      return;
+    }
 
     try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+
       const response =
         await fetch("/api/speak", {
           method: "POST",
-
           headers: {
             "Content-Type":
               "application/json",
           },
-
           body: JSON.stringify({
             text,
           }),
@@ -1005,13 +935,10 @@ export default function Home() {
             .json()
             .catch(() => null);
 
-        alert(
-          "Voice playback failed: " +
-            (data?.error ||
-              `HTTP ${response.status}`)
+        throw new Error(
+          data?.error ||
+            `HTTP ${response.status}`
         );
-
-        return;
       }
 
       const blob =
@@ -1023,24 +950,41 @@ export default function Home() {
       const audio =
         new Audio(url);
 
+      audioRef.current = audio;
+
       audio.onended = () => {
+        URL.revokeObjectURL(url);
+      };
+
+      audio.onerror = () => {
         URL.revokeObjectURL(url);
       };
 
       await audio.play();
     } catch (error) {
+      console.error(
+        "Voice playback failed:",
+        error
+      );
+
       alert(
         "Voice playback failed: " +
-          error.message
+          (error?.message ||
+            "Unknown error")
       );
     }
   }
 
-  async function sendMessage() {
-    const text =
-      input.trim();
+  /* -------------------------------------------------------
+     Chat
+  ------------------------------------------------------- */
 
-    if (!text || loading) return;
+  async function sendMessage() {
+    const text = input.trim();
+
+    if (!text || loading) {
+      return;
+    }
 
     const nextMessages = [
       ...messages,
@@ -1058,15 +1002,12 @@ export default function Home() {
       const response =
         await fetch("/api/chat", {
           method: "POST",
-
           headers: {
             "Content-Type":
               "application/json",
           },
-
           body: JSON.stringify({
-            messages:
-              nextMessages,
+            messages: nextMessages,
           }),
         });
 
@@ -1081,7 +1022,7 @@ export default function Home() {
           {
             role: "assistant",
             content:
-              data.error ||
+              data?.error ||
               "Something went wrong.",
             error: true,
           },
@@ -1090,22 +1031,31 @@ export default function Home() {
         return;
       }
 
+      const reply =
+        data?.reply ||
+        "I received your request, but no response was returned.";
+
       setMessages((current) => [
         ...current,
         {
           role: "assistant",
-          content: data.reply,
+          content: reply,
         },
       ]);
 
-      speak(data.reply);
-    } catch {
+      await speak(reply);
+    } catch (error) {
+      console.error(
+        "Chat request failed:",
+        error
+      );
+
       setMessages((current) => [
         ...current,
         {
           role: "assistant",
           content:
-            "I couldn't reach the server. Check your connection.",
+            "I couldn't reach the server. Check your connection and try again.",
           error: true,
         },
       ]);
@@ -1113,6 +1063,20 @@ export default function Home() {
       setLoading(false);
     }
   }
+
+  function handleInputKeyDown(event) {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+      sendMessage();
+    }
+  }
+
+  /* -------------------------------------------------------
+     Boot screen
+  ------------------------------------------------------- */
 
   if (!booted) {
     return (
@@ -1134,8 +1098,14 @@ export default function Home() {
     );
   }
 
+  /* -------------------------------------------------------
+     Main UI
+  ------------------------------------------------------- */
+
   return (
     <main className="app">
+      <div className="ambient-glow" />
+
       <header className="header">
         <div className="title-block">
           <div className="wordmark">
@@ -1143,10 +1113,18 @@ export default function Home() {
           </div>
 
           <div className="status-line">
-            <span className="status-dot" />
+            <span
+              className={`status-dot ${
+                loading
+                  ? "processing-dot"
+                  : ""
+              }`}
+            />
 
             {loading
               ? "PROCESSING"
+              : listening
+              ? "LISTENING"
               : "ONLINE"}
           </div>
         </div>
@@ -1160,26 +1138,37 @@ export default function Home() {
               (value) => !value
             )
           }
+          type="button"
         >
           VOICE{" "}
           {voiceOn ? "ON" : "OFF"}
         </button>
       </header>
 
-      <section className="core-stage">
+      {/* ---------------------------------------------------
+          THE NEW JARVIS REACTOR
+      --------------------------------------------------- */}
+
+      <div className="core-stage">
         <EnergyCore
-          thinking={loading}
+          active={loading}
+          listening={listening}
         />
-      </section>
+      </div>
+
+      {/* ---------------------------------------------------
+          Chat
+      --------------------------------------------------- */}
 
       <section
         className="log"
         ref={logRef}
+        aria-live="polite"
       >
         {messages.map(
           (message, index) => (
             <div
-              key={index}
+              key={`${index}-${message.role}`}
               className={`msg-row ${message.role}`}
             >
               <div className="msg-label">
@@ -1217,7 +1206,11 @@ export default function Home() {
         )}
       </section>
 
-      <footer className="input-bar">
+      {/* ---------------------------------------------------
+          Input
+      --------------------------------------------------- */}
+
+      <div className="input-bar">
         <button
           className={`icon-btn mic ${
             listening
@@ -1225,28 +1218,27 @@ export default function Home() {
               : ""
           }`}
           onClick={toggleMic}
+          type="button"
           title="Voice input"
+          aria-label="Voice input"
         >
-          🎙
+          <span className="mic-symbol">
+            🎙
+          </span>
         </button>
 
         <input
           value={input}
           onChange={(event) =>
-            setInput(
-              event.target.value
-            )
+            setInput(event.target.value)
           }
-          onKeyDown={(event) => {
-            if (
-              event.key ===
-              "Enter"
-            ) {
-              sendMessage();
-            }
-          }}
+          onKeyDown={
+            handleInputKeyDown
+          }
           placeholder="Speak, and I shall listen..."
           disabled={loading}
+          autoComplete="off"
+          spellCheck="false"
         />
 
         <button
@@ -1256,11 +1248,13 @@ export default function Home() {
             loading ||
             !input.trim()
           }
+          type="button"
           title="Send"
+          aria-label="Send message"
         >
           ➤
         </button>
-      </footer>
+      </div>
     </main>
   );
 }
