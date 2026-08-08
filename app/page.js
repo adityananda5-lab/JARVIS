@@ -9,38 +9,84 @@ const BOOT_LINES = [
   { text: "ALL SYSTEMS NOMINAL", dim: false },
 ];
 
+// Deterministic pseudo-random particle field using the golden angle —
+// looks organic/scattered but never changes between server and client renders
+const PARTICLES = Array.from({ length: 46 }).map((_, i) => {
+  const angle = i * 137.508 * (Math.PI / 180);
+  const radiusJitter = (Math.sin(i * 12.9898) * 0.5 + 0.5); // deterministic 0..1
+  const radius = 34 + radiusJitter * 20;
+  const size = 0.3 + (Math.cos(i * 7.233) * 0.5 + 0.5) * 0.5;
+  const opacity = 0.25 + (Math.sin(i * 3.71) * 0.5 + 0.5) * 0.55;
+  return {
+    x: 50 + radius * Math.cos(angle),
+    y: 50 + radius * Math.sin(angle),
+    size,
+    opacity,
+    delay: (i % 10) * 0.3,
+  };
+});
+
+const RAYS = Array.from({ length: 18 }).map((_, i) => {
+  const angle = (i * 360) / 18;
+  const lengthJitter = Math.sin(i * 4.51) * 0.5 + 0.5;
+  const length = 40 + lengthJitter * 20; // some rays poke past the rings
+  return { angle, length };
+});
+
 function Core({ thinking }) {
   return (
     <div className={`core${thinking ? " thinking" : ""}`}>
       <svg viewBox="0 0 100 100">
         <defs>
           <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#fff4e0" />
-            <stop offset="35%" stopColor="var(--gold-bright)" />
-            <stop offset="70%" stopColor="var(--ember)" />
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="25%" stopColor="#fff4e0" />
+            <stop offset="50%" stopColor="var(--gold-bright)" />
+            <stop offset="80%" stopColor="var(--ember)" />
             <stop offset="100%" stopColor="var(--ember)" stopOpacity="0" />
           </radialGradient>
+          <filter id="softBlur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.2" />
+          </filter>
         </defs>
-        <circle className="ring-outer" cx="50" cy="50" r="46" fill="none" stroke="var(--ember)" strokeWidth="0.6" strokeDasharray="0.5 3" opacity="0.45" />
-        <circle className="ring-mid" cx="50" cy="50" r="40" fill="none" stroke="var(--gold)" strokeWidth="0.8" strokeDasharray="6 3 1 3" opacity="0.5" />
-        <circle className="ring-inner" cx="50" cy="50" r="30" fill="none" stroke="var(--gold-bright)" strokeWidth="1" strokeDasharray="2 4" opacity="0.65" />
-        <g className="streaks">
-          {Array.from({ length: 10 }).map((_, i) => (
+
+        <g className="particles">
+          {PARTICLES.map((p, i) => (
+            <circle
+              key={i}
+              cx={p.x}
+              cy={p.y}
+              r={p.size}
+              fill="var(--gold-bright)"
+              opacity={p.opacity}
+              style={{ animationDelay: `${p.delay}s` }}
+              className="particle"
+            />
+          ))}
+        </g>
+
+        <ellipse className="ring-orbit" cx="50" cy="50" rx="42" ry="18" fill="none" stroke="var(--gold)" strokeWidth="0.6" opacity="0.5" transform="rotate(-24 50 50)" />
+        <circle className="ring-outer" cx="50" cy="50" r="38" fill="none" stroke="var(--ember)" strokeWidth="0.5" strokeDasharray="0.5 2.5" opacity="0.4" />
+        <circle className="ring-inner" cx="50" cy="50" r="27" fill="none" stroke="var(--gold-bright)" strokeWidth="0.7" strokeDasharray="1.5 3" opacity="0.55" />
+
+        <g className="streaks" filter="url(#softBlur)">
+          {RAYS.map((r, i) => (
             <line
               key={i}
               x1="50"
               y1="50"
-              x2={50 + 44 * Math.cos((i * Math.PI * 2) / 10)}
-              y2={50 + 44 * Math.sin((i * Math.PI * 2) / 10)}
+              x2={50 + r.length * Math.cos((r.angle * Math.PI) / 180)}
+              y2={50 + r.length * Math.sin((r.angle * Math.PI) / 180)}
               stroke="var(--ember)"
-              strokeWidth="0.4"
-              opacity="0.25"
+              strokeWidth="0.35"
+              opacity="0.35"
             />
           ))}
         </g>
+
         <g className="core-glow">
-          <circle cx="50" cy="50" r="20" fill="url(#coreGlow)" />
-          <circle cx="50" cy="50" r="5" fill="#fff8ec" />
+          <circle cx="50" cy="50" r="16" fill="url(#coreGlow)" />
+          <circle cx="50" cy="50" r="4" fill="#ffffff" filter="url(#softBlur)" />
         </g>
       </svg>
     </div>
@@ -74,13 +120,6 @@ export default function Home() {
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
-
-  // Some browsers load their voice list asynchronously — this makes sure it's ready
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-  }, []);
 
   // Set up speech recognition if the browser supports it
   useEffect(() => {
@@ -128,27 +167,26 @@ export default function Home() {
     }
   }
 
-  function speak(text) {
-    if (!voiceOn || typeof window === "undefined" || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-
-    // Look for well-known British male voice names first (varies by browser/OS),
-    // then fall back to any British voice, then any English voice.
-    const voices = window.speechSynthesis.getVoices();
-    const knownMaleNames = ["Daniel", "Google UK English Male", "Microsoft George", "Microsoft Ryan", "Arthur", "Oliver"];
-    const britishVoice =
-      voices.find((v) => knownMaleNames.some((name) => v.name.includes(name))) ||
-      voices.find((v) => v.lang === "en-GB" && /male/i.test(v.name)) ||
-      voices.find((v) => v.lang === "en-GB") ||
-      voices.find((v) => v.lang && v.lang.startsWith("en-GB"));
-    if (britishVoice) utterance.voice = britishVoice;
-
-    utterance.lang = "en-GB";
-    utterance.rate = 0.95;
-    utterance.pitch = 0.8;
-    utterance.volume = 1;
-    window.speechSynthesis.speak(utterance);
+  async function speak(text) {
+    if (!voiceOn) return;
+    try {
+      const res = await fetch("/api/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert("Voice playback failed: " + (data?.error || `HTTP ${res.status}`));
+        return; // text reply is already shown either way
+      }
+      const audioBlob = await res.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    } catch (err) {
+      alert("Voice playback failed: " + err.message);
+    }
   }
 
   async function sendMessage() {
