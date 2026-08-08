@@ -4,667 +4,804 @@ import { useEffect, useRef, useState } from "react";
 
 const BOOT_LINES = [
   { text: "INITIALIZING J.A.R.V.I.S. CORE...", dim: false },
-  { text: "LOADING NEURAL INTERFACE", dim: true },
-  { text: "CALIBRATING VOICE SYSTEM", dim: true },
-  { text: "ENERGY CORE ONLINE", dim: false },
+  { text: "loading language subsystem", dim: true },
+  { text: "calibrating voice interface", dim: true },
   { text: "ALL SYSTEMS NOMINAL", dim: false },
 ];
 
 /* =========================================================
-   HOLOGRAPHIC JARVIS CORE
-   Canvas renderer — no external libraries required
-========================================================= */
+   ENERGY CORE
+   ========================================================= */
 
-function JarvisCore({ thinking }) {
+function EnergyCore({ thinking }) {
   const canvasRef = useRef(null);
-  const animationRef = useRef(null);
-  const stateRef = useRef({
-    width: 0,
-    height: 0,
-    dpr: 1,
-    time: 0,
-    particles: [],
-    stars: [],
-  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d", {
-      alpha: true,
-      desynchronized: true,
-    });
+    const ctx = canvas.getContext("2d");
 
-    if (!ctx) return;
+    let width = 0;
+    let height = 0;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    const state = stateRef.current;
+    let animationFrame;
 
-    /* -----------------------------
-       deterministic random
-    ----------------------------- */
+    const particles = [];
+    const filaments = [];
+    const arcs = [];
 
-    let seed = 938472;
+    const TAU = Math.PI * 2;
+
+    /*
+      Deterministic pseudo-random generator.
+      This gives us a chaotic-looking field without
+      changing unpredictably between renders.
+    */
+    let seed = 928371;
 
     function random() {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     }
 
-    /* -----------------------------
-       resize
-    ----------------------------- */
-
     function resize() {
-      const rect = canvas.getBoundingClientRect();
+      width = canvas.clientWidth;
+      height = canvas.clientHeight;
 
-      state.dpr = Math.min(window.devicePixelRatio || 1, 2);
-      state.width = rect.width;
-      state.height = rect.height;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-      canvas.width = Math.floor(rect.width * state.dpr);
-      canvas.height = Math.floor(rect.height * state.dpr);
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
 
-      ctx.setTransform(
-        state.dpr,
-        0,
-        0,
-        state.dpr,
-        0,
-        0
-      );
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    resize();
+    /*
+      Particle field
+    */
+    function createParticles() {
+      particles.length = 0;
 
-    window.addEventListener("resize", resize);
+      const count = 900;
 
-    /* -----------------------------
-       particle creation
-    ----------------------------- */
+      for (let i = 0; i < count; i++) {
+        const angle = random() * TAU;
 
-    const PARTICLE_COUNT = 950;
-    const STAR_COUNT = 160;
+        /*
+          Most particles stay close to the energy core,
+          while some are thrown much farther away.
+        */
+        const distance =
+          Math.pow(random(), 0.72) *
+          Math.min(width, height) *
+          0.43;
 
-    state.particles = [];
-    state.stars = [];
+        particles.push({
+          angle,
+          distance,
 
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const theta = random() * Math.PI * 2;
-      const phi = Math.acos(2 * random() - 1);
+          size: 0.25 + random() * 1.7,
 
-      const radius =
-        0.18 +
-        Math.pow(random(), 0.55) * 0.82;
+          speed:
+            (0.0007 + random() * 0.0025) *
+            (random() > 0.5 ? 1 : -1),
 
-      state.particles.push({
-        theta,
-        phi,
-        radius,
+          drift:
+            (random() - 0.5) *
+            0.035,
 
-        size:
-          0.35 +
-          Math.pow(random(), 2) * 1.7,
+          alpha: 0.18 + random() * 0.72,
 
-        alpha:
-          0.12 +
-          random() * 0.72,
+          phase: random() * TAU,
 
-        speed:
-          0.08 +
-          random() * 0.5,
+          warm: random(),
 
-        drift:
-          (random() - 0.5) * 0.8,
-
-        phase: random() * Math.PI * 2,
-
-        layer: random(),
-      });
+          radial:
+            (random() - 0.5) *
+            0.5,
+        });
+      }
     }
 
-    for (let i = 0; i < STAR_COUNT; i++) {
-      state.stars.push({
-        angle: random() * Math.PI * 2,
-        distance: 0.85 + random() * 0.65,
-        size: 0.4 + random() * 1.3,
-        alpha: 0.15 + random() * 0.5,
-        speed: (random() - 0.5) * 0.15,
-      });
+    /*
+      Chaotic energy filaments.
+      These are NOT clean radial rays.
+    */
+    function createFilaments() {
+      filaments.length = 0;
+
+      const count = 85;
+
+      for (let i = 0; i < count; i++) {
+        const points = [];
+
+        const baseAngle = random() * TAU;
+
+        const length =
+          Math.min(width, height) *
+          (0.18 + random() * 0.38);
+
+        const segments = 12 + Math.floor(random() * 15);
+
+        for (let j = 0; j <= segments; j++) {
+          const progress = j / segments;
+
+          const radius =
+            progress *
+            length *
+            (0.65 + random() * 0.5);
+
+          const wobble =
+            Math.sin(progress * 11 + random() * 5) *
+            (10 + random() * 20);
+
+          const angle =
+            baseAngle +
+            wobble * 0.008 +
+            (random() - 0.5) * 0.08;
+
+          points.push({
+            radius,
+            angle,
+            progress,
+          });
+        }
+
+        filaments.push({
+          points,
+
+          width:
+            0.3 + random() * 1.2,
+
+          alpha:
+            0.08 + random() * 0.35,
+
+          speed:
+            0.002 + random() * 0.006,
+
+          phase: random() * TAU,
+        });
+      }
     }
 
-    /* -----------------------------
-       helpers
-    ----------------------------- */
+    /*
+      Broken irregular arcs.
+      These create the fragmented JARVIS-machine look.
+    */
+    function createArcs() {
+      arcs.length = 0;
 
-    function projectParticle(p, t) {
-      const spin = t * (thinking ? 0.0009 : 0.00025);
+      const count = 42;
 
-      let theta = p.theta + spin * p.speed;
+      for (let i = 0; i < count; i++) {
+        arcs.push({
+          radius:
+            Math.min(width, height) *
+            (0.13 + random() * 0.32),
 
-      const x3 =
-        Math.sin(p.phi) *
-        Math.cos(theta) *
-        p.radius;
+          start:
+            random() * TAU,
 
-      const y3 =
-        Math.cos(p.phi) *
-        p.radius;
+          length:
+            0.12 + random() * 0.7,
 
-      const z3 =
-        Math.sin(p.phi) *
-        Math.sin(theta) *
-        p.radius;
+          width:
+            0.4 + random() * 1.4,
 
-      // tilt the sphere
-      const tilt = -0.25;
+          alpha:
+            0.1 + random() * 0.5,
 
-      const y =
-        y3 * Math.cos(tilt) -
-        z3 * Math.sin(tilt);
+          speed:
+            (random() - 0.5) * 0.006,
 
-      const z =
-        y3 * Math.sin(tilt) +
-        z3 * Math.cos(tilt);
-
-      const perspective =
-        1 / (1.7 - z * 0.65);
-
-      return {
-        x: x3 * perspective,
-        y: y * perspective,
-        z,
-        scale: perspective,
-      };
+          phase:
+            random() * TAU,
+        });
+      }
     }
 
-    function drawGlowCircle(x, y, radius, color, alpha) {
+    function initialize() {
+      seed = 928371;
+
+      createParticles();
+      createFilaments();
+      createArcs();
+    }
+
+    function drawGlow(cx, cy, radius, alpha) {
       const gradient = ctx.createRadialGradient(
-        x,
-        y,
+        cx,
+        cy,
         0,
-        x,
-        y,
+        cx,
+        cy,
         radius
       );
 
       gradient.addColorStop(
         0,
-        `rgba(${color},${alpha})`
+        `rgba(255,255,245,${alpha})`
+      );
+
+      gradient.addColorStop(
+        0.08,
+        `rgba(255,242,195,${alpha * 0.95})`
       );
 
       gradient.addColorStop(
         0.25,
-        `rgba(${color},${alpha * 0.65})`
+        `rgba(255,180,65,${alpha * 0.75})`
       );
 
       gradient.addColorStop(
-        0.65,
-        `rgba(${color},${alpha * 0.12})`
+        0.5,
+        `rgba(255,105,15,${alpha * 0.32})`
       );
 
       gradient.addColorStop(
         1,
-        `rgba(${color},0)`
+        "rgba(255,70,0,0)"
       );
 
       ctx.fillStyle = gradient;
 
       ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
+
+      ctx.arc(cx, cy, radius, 0, TAU);
+
       ctx.fill();
     }
 
-    /* -----------------------------
-       main animation
-    ----------------------------- */
+    function draw(timestamp) {
+      const time = timestamp * 0.001;
 
-    function render(timestamp) {
-      state.time = timestamp;
+      ctx.clearRect(0, 0, width, height);
 
-      const w = state.width;
-      const h = state.height;
-
-      if (!w || !h) {
-        animationRef.current =
-          requestAnimationFrame(render);
-        return;
-      }
-
-      ctx.clearRect(0, 0, w, h);
-
-      const cx = w / 2;
-      const cy = h / 2;
+      const cx = width / 2;
+      const cy = height / 2;
 
       /*
-        Core size.
+        Slightly off-center energy makes it feel less
+        like a perfect astronomical object.
+      */
+      const coreX =
+        cx +
+        Math.sin(time * 0.4) * width * 0.006;
 
-        This is deliberately large.
-        It is what makes the interface resemble
-        the reference images instead of a small
-        circular UI icon.
+      const coreY =
+        cy +
+        Math.cos(time * 0.31) * height * 0.006;
+
+      const minSize = Math.min(width, height);
+
+      /*
+        Processing mode dramatically increases energy.
+      */
+      const intensity = thinking ? 1.8 : 1;
+
+      /*
+        Large ambient glow.
+      */
+      drawGlow(
+        coreX,
+        coreY,
+        minSize * (thinking ? 0.32 : 0.25),
+        thinking ? 0.24 : 0.16
+      );
+
+      /*
+        ---------------------------------------------------
+        BROKEN ENERGY ARCS
+        ---------------------------------------------------
       */
 
-      const base =
-        Math.min(w, h) *
-        (thinking ? 0.39 : 0.33);
+      ctx.save();
 
-      /* -----------------------------
-         global glow
-      ----------------------------- */
+      arcs.forEach((arc, index) => {
+        arc.start += arc.speed * intensity;
+
+        const pulse =
+          0.65 +
+          Math.sin(time * 2 + arc.phase) * 0.35;
+
+        ctx.beginPath();
+
+        ctx.arc(
+          coreX,
+          coreY,
+          arc.radius *
+            (thinking
+              ? 1.08 + Math.sin(time + index) * 0.03
+              : 1),
+          arc.start,
+          arc.start + arc.length
+        );
+
+        ctx.strokeStyle = `rgba(
+          ${255},
+          ${145 + Math.floor(pulse * 80)},
+          ${40 + Math.floor(pulse * 40)},
+          ${arc.alpha * pulse * intensity}
+        )`;
+
+        ctx.lineWidth =
+          arc.width *
+          (thinking ? 1.3 : 1);
+
+        ctx.shadowBlur = thinking ? 10 : 4;
+        ctx.shadowColor = "rgba(255,110,20,0.7)";
+
+        ctx.stroke();
+      });
+
+      ctx.restore();
+
+      /*
+        ---------------------------------------------------
+        CHAOTIC FILAMENTS
+        ---------------------------------------------------
+      */
+
+      ctx.save();
+
+      filaments.forEach((filament, index) => {
+        const rotation =
+          Math.sin(
+            time * filament.speed * 35 +
+              filament.phase
+          ) *
+          0.08;
+
+        ctx.beginPath();
+
+        filament.points.forEach((point, pIndex) => {
+          const wobble =
+            Math.sin(
+              time * 3 +
+                pIndex * 0.9 +
+                filament.phase
+            ) *
+            (thinking ? 7 : 3);
+
+          const angle =
+            point.angle +
+            rotation +
+            wobble * 0.003;
+
+          const radius =
+            point.radius *
+            (thinking
+              ? 1.08 + Math.sin(time * 2 + index) * 0.04
+              : 1);
+
+          const x =
+            coreX +
+            Math.cos(angle) * radius;
+
+          const y =
+            coreY +
+            Math.sin(angle) * radius;
+
+          if (pIndex === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+
+        const flicker =
+          0.55 +
+          Math.sin(time * 5 + filament.phase) *
+            0.45;
+
+        ctx.strokeStyle = `rgba(
+          255,
+          ${105 + Math.floor(flicker * 100)},
+          ${20 + Math.floor(flicker * 50)},
+          ${filament.alpha *
+            flicker *
+            intensity}
+        )`;
+
+        ctx.lineWidth =
+          filament.width *
+          (thinking ? 1.5 : 1);
+
+        ctx.shadowBlur = thinking ? 14 : 5;
+        ctx.shadowColor =
+          "rgba(255,100,10,0.8)";
+
+        ctx.stroke();
+      });
+
+      ctx.restore();
+
+      /*
+        ---------------------------------------------------
+        PARTICLES
+        ---------------------------------------------------
+      */
 
       ctx.save();
 
       ctx.globalCompositeOperation = "lighter";
 
-      drawGlowCircle(
-        cx,
-        cy,
-        base * 1.65,
-        "255,92,8",
-        thinking ? 0.18 : 0.10
-      );
+      particles.forEach((particle, index) => {
+        particle.angle +=
+          particle.speed *
+          intensity;
 
-      drawGlowCircle(
-        cx,
-        cy,
-        base * 1.05,
-        "255,153,45",
-        thinking ? 0.23 : 0.14
-      );
+        particle.distance +=
+          particle.radial *
+          0.015 *
+          intensity;
 
-      /* -----------------------------
-         radial energy beams
-      ----------------------------- */
-
-      const rayCount = thinking ? 110 : 58;
-
-      for (let i = 0; i < rayCount; i++) {
-        const angle =
-          (i / rayCount) *
-            Math.PI *
-            2 +
-          Math.sin(i * 7.31) * 0.18;
-
-        const inner =
-          base *
-          (0.45 + Math.sin(i * 3.7) * 0.08);
-
-        const outer =
-          base *
-          (1.15 +
-            Math.sin(i * 8.11) *
-              0.55 +
-            Math.random() * 0.03);
-
-        const x1 =
-          cx + Math.cos(angle) * inner;
-
-        const y1 =
-          cy + Math.sin(angle) * inner;
-
-        const x2 =
-          cx + Math.cos(angle) * outer;
-
-        const y2 =
-          cy + Math.sin(angle) * outer;
-
-        const gradient =
-          ctx.createLinearGradient(
-            x1,
-            y1,
-            x2,
-            y2
-          );
-
-        gradient.addColorStop(
-          0,
-          "rgba(255,255,210,0.55)"
-        );
-
-        gradient.addColorStop(
-          0.2,
-          "rgba(255,180,65,0.28)"
-        );
-
-        gradient.addColorStop(
-          1,
-          "rgba(255,80,0,0)"
-        );
-
-        ctx.strokeStyle = gradient;
-
-        ctx.lineWidth =
-          thinking
-            ? 0.6 + Math.random() * 1.5
-            : 0.35 + Math.random() * 0.8;
-
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-      }
-
-      /* -----------------------------
-         orbital rings
-      ----------------------------- */
-
-      const ringRotation =
-        timestamp *
-        (thinking ? 0.00035 : 0.00008);
-
-      for (let ring = 0; ring < 7; ring++) {
-        const radius =
-          base *
-          (0.48 + ring * 0.105);
-
-        ctx.save();
-
-        ctx.translate(cx, cy);
-
-        ctx.rotate(
-          ringRotation *
-            (ring % 2 === 0 ? 1 : -1)
-        );
-
-        ctx.rotate(
-          ring * 0.45
-        );
-
-        ctx.scale(
-          1,
-          0.35 + ring * 0.055
-        );
-
-        ctx.beginPath();
-
-        ctx.arc(
-          0,
-          0,
-          radius,
-          0,
-          Math.PI * 2
-        );
-
-        ctx.strokeStyle =
-          ring % 2 === 0
-            ? "rgba(255,170,65,0.38)"
-            : "rgba(255,210,125,0.22)";
-
-        ctx.lineWidth =
-          ring === 0
-            ? 1.4
-            : 0.65;
-
-        ctx.setLineDash(
-          ring % 3 === 0
-            ? [2, 8]
-            : [1, 4]
-        );
-
-        ctx.stroke();
-
-        ctx.restore();
-      }
-
-      /* -----------------------------
-         dense particle sphere
-      ----------------------------- */
-
-      const projected = [];
-
-      for (const p of state.particles) {
-        const point =
-          projectParticle(
-            p,
-            timestamp
-          );
-
-        const px =
-          cx +
-          point.x * base;
-
-        const py =
-          cy +
-          point.y * base;
-
-        projected.push({
-          ...p,
-          ...point,
-          px,
-          py,
-        });
-      }
-
-      projected.sort(
-        (a, b) => a.z - b.z
-      );
-
-      for (const p of projected) {
-        const depth =
-          (p.z + 1) / 2;
-
-        const pulse =
-          0.75 +
+        const breathing =
+          1 +
           Math.sin(
-            timestamp * 0.0025 +
-              p.phase
+            time * 2.2 +
+              particle.phase
           ) *
-            0.25;
+            0.04;
 
-        const alpha =
-          p.alpha *
-          (0.25 + depth * 0.9) *
-          pulse;
+        let radius =
+          particle.distance *
+          breathing;
 
-        if (alpha <= 0.01) continue;
-
-        const size =
-          p.size *
-          p.scale *
-          (thinking ? 1.35 : 1);
-
-        ctx.fillStyle =
-          `rgba(255,${
-            120 +
-            Math.floor(
-              depth * 100
-            )
-          },${
-            35 +
-            Math.floor(
-              depth * 60
-            )
-          },${alpha})`;
-
-        ctx.beginPath();
-
-        ctx.arc(
-          p.px,
-          p.py,
-          size,
-          0,
-          Math.PI * 2
-        );
-
-        ctx.fill();
-      }
-
-      /* -----------------------------
-         random orbit fragments
-      ----------------------------- */
-
-      const fragments =
-        thinking ? 80 : 42;
-
-      for (
-        let i = 0;
-        i < fragments;
-        i++
-      ) {
-        const angle =
-          i * 2.39996 +
-          timestamp *
-            0.00015 *
-            (i % 2 ? -1 : 1);
-
-        const distance =
-          base *
-          (0.7 +
-            Math.sin(i * 8.2) *
-              0.35 +
-            ((i * 17) % 100) /
-              160);
+        /*
+          Processing throws particles outward.
+        */
+        if (thinking) {
+          radius *=
+            1 +
+            Math.sin(
+              time * 1.8 +
+                particle.phase
+            ) *
+              0.08;
+        }
 
         const x =
-          cx +
-          Math.cos(angle) *
-            distance;
+          coreX +
+          Math.cos(particle.angle) *
+            radius;
 
         const y =
-          cy +
-          Math.sin(angle) *
-            distance *
-            (0.55 +
-              Math.sin(i) * 0.15);
+          coreY +
+          Math.sin(particle.angle) *
+            radius;
 
-        const length =
-          4 +
-          ((i * 13) % 24);
+        const flicker =
+          0.55 +
+          Math.sin(
+            time * 3 +
+              particle.phase
+          ) *
+            0.45;
 
-        ctx.strokeStyle =
-          `rgba(255,${140 + (i % 90)},55,${
-            0.12 +
-            (i % 5) * 0.06
-          })`;
+        const alpha =
+          particle.alpha *
+          flicker *
+          intensity;
 
-        ctx.lineWidth =
-          0.5 +
-          (i % 3) * 0.4;
+        const size =
+          particle.size *
+          (thinking ? 1.2 : 1);
 
+        /*
+          Tiny particle.
+        */
         ctx.beginPath();
 
-        ctx.moveTo(
-          x - Math.cos(angle) * length,
-          y - Math.sin(angle) * length
+        ctx.arc(
+          x,
+          y,
+          size,
+          0,
+          TAU
         );
 
-        ctx.lineTo(
-          x + Math.cos(angle) * length,
-          y + Math.sin(angle) * length
-        );
+        ctx.fillStyle =
+          particle.warm > 0.5
+            ? `rgba(255,196,110,${alpha})`
+            : `rgba(255,116,25,${alpha})`;
 
-        ctx.stroke();
-      }
+        ctx.shadowBlur =
+          size > 1 ? 8 : 3;
 
-      /* -----------------------------
-         hot center
-      ----------------------------- */
+        ctx.shadowColor =
+          "rgba(255,120,25,0.8)";
 
-      drawGlowCircle(
-        cx,
-        cy,
-        base * 0.48,
-        "255,80,0",
-        thinking ? 0.45 : 0.30
-      );
+        ctx.fill();
 
-      drawGlowCircle(
-        cx,
-        cy,
-        base * 0.31,
-        "255,170,60",
+        /*
+          A small percentage become streak particles.
+        */
+        if (
+          index % 17 === 0 &&
+          radius > minSize * 0.1
+        ) {
+          const streakLength =
+            (thinking ? 20 : 9) +
+            Math.sin(
+              time * 4 +
+                particle.phase
+            ) *
+              6;
+
+          const dx =
+            Math.cos(particle.angle) *
+            streakLength;
+
+          const dy =
+            Math.sin(particle.angle) *
+            streakLength;
+
+          ctx.beginPath();
+
+          ctx.moveTo(x, y);
+
+          ctx.lineTo(
+            x + dx,
+            y + dy
+          );
+
+          ctx.strokeStyle =
+            `rgba(255,145,50,${
+              alpha * 0.5
+            })`;
+
+          ctx.lineWidth =
+            size * 0.55;
+
+          ctx.stroke();
+        }
+      });
+
+      ctx.restore();
+
+      /*
+        ---------------------------------------------------
+        CENTRAL ENERGY CORE
+        ---------------------------------------------------
+      */
+
+      const pulse =
+        1 +
+        Math.sin(
+          time *
+            (thinking ? 8 : 3)
+        ) *
+          (thinking ? 0.1 : 0.045);
+
+      /*
+        Outer white-hot glow.
+      */
+      drawGlow(
+        coreX,
+        coreY,
+        minSize *
+          0.14 *
+          pulse *
+          (thinking ? 1.15 : 1),
         thinking ? 0.75 : 0.55
       );
 
-      const coreGradient =
-        ctx.createRadialGradient(
-          cx,
-          cy,
-          0,
-          cx,
-          cy,
-          base * 0.24
-        );
+      /*
+        Orange plasma layer.
+      */
+      const plasma = ctx.createRadialGradient(
+        coreX,
+        coreY,
+        0,
+        coreX,
+        coreY,
+        minSize * 0.075
+      );
 
-      coreGradient.addColorStop(
+      plasma.addColorStop(
         0,
         "rgba(255,255,255,1)"
       );
 
-      coreGradient.addColorStop(
-        0.16,
-        "rgba(255,248,210,1)"
+      plasma.addColorStop(
+        0.18,
+        "rgba(255,248,218,1)"
       );
 
-      coreGradient.addColorStop(
-        0.42,
-        "rgba(255,214,125,0.98)"
+      plasma.addColorStop(
+        0.38,
+        "rgba(255,207,111,0.98)"
       );
 
-      coreGradient.addColorStop(
-        0.72,
-        "rgba(255,130,20,0.65)"
+      plasma.addColorStop(
+        0.68,
+        "rgba(255,112,10,0.75)"
       );
 
-      coreGradient.addColorStop(
+      plasma.addColorStop(
         1,
-        "rgba(255,50,0,0)"
+        "rgba(255,70,0,0)"
       );
 
-      ctx.fillStyle =
-        coreGradient;
+      ctx.fillStyle = plasma;
 
       ctx.beginPath();
 
       ctx.arc(
-        cx,
-        cy,
-        base * 0.24,
+        coreX,
+        coreY,
+        minSize *
+          0.075 *
+          pulse,
         0,
-        Math.PI * 2
+        TAU
       );
 
       ctx.fill();
 
-      /* bright central nucleus */
+      /*
+        White-hot center.
+      */
+      const whiteRadius =
+        minSize *
+        0.028 *
+        pulse;
 
-      ctx.fillStyle =
-        "rgba(255,255,245,0.98)";
+      const whiteGlow =
+        ctx.createRadialGradient(
+          coreX,
+          coreY,
+          0,
+          coreX,
+          coreY,
+          whiteRadius
+        );
 
-      ctx.shadowBlur =
-        thinking ? 45 : 30;
+      whiteGlow.addColorStop(
+        0,
+        "rgba(255,255,255,1)"
+      );
 
-      ctx.shadowColor =
-        "rgba(255,150,50,0.95)";
+      whiteGlow.addColorStop(
+        0.5,
+        "rgba(255,255,245,0.95)"
+      );
+
+      whiteGlow.addColorStop(
+        1,
+        "rgba(255,220,150,0)"
+      );
+
+      ctx.fillStyle = whiteGlow;
 
       ctx.beginPath();
 
       ctx.arc(
-        cx,
-        cy,
-        base *
-          (thinking ? 0.075 : 0.065),
+        coreX,
+        coreY,
+        whiteRadius,
         0,
-        Math.PI * 2
+        TAU
       );
 
       ctx.fill();
 
-      ctx.shadowBlur = 0;
+      /*
+        ---------------------------------------------------
+        RANDOM ENERGY IMPULSES
+        ---------------------------------------------------
+      */
+
+      ctx.save();
+
+      const impulseCount = thinking ? 38 : 18;
+
+      for (let i = 0; i < impulseCount; i++) {
+        const angle =
+          (i / impulseCount) *
+            TAU +
+          Math.sin(
+            time * 2 + i
+          ) *
+            0.15;
+
+        const inner =
+          minSize *
+          (0.04 + Math.sin(i * 4.2) * 0.015);
+
+        const outer =
+          minSize *
+          (0.11 +
+            Math.abs(
+              Math.sin(
+                i * 9.31
+              )
+            ) *
+              (thinking
+                ? 0.42
+                : 0.27));
+
+        const x1 =
+          coreX +
+          Math.cos(angle) *
+            inner;
+
+        const y1 =
+          coreY +
+          Math.sin(angle) *
+            inner;
+
+        const x2 =
+          coreX +
+          Math.cos(angle) *
+            outer;
+
+        const y2 =
+          coreY +
+          Math.sin(angle) *
+            outer;
+
+        ctx.beginPath();
+
+        ctx.moveTo(x1, y1);
+
+        /*
+          Slightly crooked impulse.
+        */
+        ctx.lineTo(
+          (x1 + x2) / 2 +
+            Math.sin(
+              time * 4 + i
+            ) *
+              8,
+          (y1 + y2) / 2 +
+            Math.cos(
+              time * 3 + i
+            ) *
+              8
+        );
+
+        ctx.lineTo(x2, y2);
+
+        ctx.strokeStyle =
+          `rgba(255,${130 + (i % 5) * 20},40,${
+            thinking ? 0.4 : 0.2
+          })`;
+
+        ctx.lineWidth =
+          thinking ? 1.1 : 0.7;
+
+        ctx.shadowBlur = 12;
+
+        ctx.shadowColor =
+          "rgba(255,100,20,0.8)";
+
+        ctx.stroke();
+      }
 
       ctx.restore();
 
-      animationRef.current =
-        requestAnimationFrame(render);
+      animationFrame =
+        requestAnimationFrame(draw);
     }
 
-    animationRef.current =
-      requestAnimationFrame(render);
+    resize();
+    initialize();
+
+    window.addEventListener(
+      "resize",
+      resize
+    );
+
+    animationFrame =
+      requestAnimationFrame(draw);
 
     return () => {
       cancelAnimationFrame(
-        animationRef.current
+        animationFrame
       );
 
       window.removeEventListener(
@@ -675,19 +812,22 @@ function JarvisCore({ thinking }) {
   }, [thinking]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={`jarvis-canvas ${
-        thinking ? "thinking" : ""
+    <div
+      className={`energy-core ${
+        thinking ? "processing" : ""
       }`}
-      aria-hidden="true"
-    />
+    >
+      <canvas
+        ref={canvasRef}
+        aria-hidden="true"
+      />
+    </div>
   );
 }
 
 /* =========================================================
-   MAIN APP
-========================================================= */
+   MAIN APPLICATION
+   ========================================================= */
 
 export default function Home() {
   const [booted, setBooted] =
@@ -723,13 +863,7 @@ export default function Home() {
   const recognitionRef =
     useRef(null);
 
-  const audioRef =
-    useRef(null);
-
-  /* -----------------------------
-     boot
-  ----------------------------- */
-
+  /* Boot sequence */
   useEffect(() => {
     if (
       visibleBootLines <
@@ -740,26 +874,22 @@ export default function Home() {
           setVisibleBootLines(
             (n) => n + 1
           );
-        }, 300);
+        }, 380);
 
       return () =>
         clearTimeout(timer);
     }
 
     const timer =
-      setTimeout(
-        () => setBooted(true),
-        450
-      );
+      setTimeout(() => {
+        setBooted(true);
+      }, 500);
 
     return () =>
       clearTimeout(timer);
   }, [visibleBootLines]);
 
-  /* -----------------------------
-     chat scrolling
-  ----------------------------- */
-
+  /* Auto-scroll */
   useEffect(() => {
     if (!logRef.current) return;
 
@@ -770,25 +900,15 @@ export default function Home() {
     });
   }, [messages, loading]);
 
-  /* -----------------------------
-     speech recognition
-  ----------------------------- */
-
+  /* Speech recognition */
   useEffect(() => {
-    if (
-      typeof window ===
-      "undefined"
-    ) {
-      return;
-    }
-
     const SpeechRecognition =
-      window.SpeechRecognition ||
-      window.webkitSpeechRecognition;
+      typeof window !==
+        "undefined" &&
+      (window.SpeechRecognition ||
+        window.webkitSpeechRecognition);
 
-    if (!SpeechRecognition) {
-      return;
-    }
+    if (!SpeechRecognition) return;
 
     const recognition =
       new SpeechRecognition();
@@ -796,10 +916,6 @@ export default function Home() {
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = "en-US";
-
-    recognition.onstart = () => {
-      setListening(true);
-    };
 
     recognition.onresult = (event) => {
       const transcript =
@@ -819,7 +935,7 @@ export default function Home() {
           "service-not-allowed"
       ) {
         alert(
-          "Microphone access was blocked. Allow microphone access for this website and try again."
+          "Microphone access was blocked. Allow microphone access for this website."
         );
       }
     };
@@ -838,15 +954,8 @@ export default function Home() {
     };
   }, []);
 
-  /* -----------------------------
-     microphone
-  ----------------------------- */
-
   function toggleMic() {
-    const recognition =
-      recognitionRef.current;
-
-    if (!recognition) {
+    if (!recognitionRef.current) {
       alert(
         "Voice input is not supported by this browser. Try Chrome or Edge."
       );
@@ -856,51 +965,39 @@ export default function Home() {
 
     if (listening) {
       try {
-        recognition.stop();
+        recognitionRef.current.stop();
       } catch {}
 
       setListening(false);
+
       return;
     }
 
     try {
-      recognition.start();
+      recognitionRef.current.start();
       setListening(true);
     } catch {
       setListening(false);
     }
   }
 
-  /* -----------------------------
-     voice output
-  ----------------------------- */
-
   async function speak(text) {
     if (!voiceOn) return;
 
     try {
-      if (audioRef.current) {
-        try {
-          audioRef.current.pause();
-        } catch {}
-
-        audioRef.current = null;
-      }
-
       const response =
-        await fetch(
-          "/api/speak",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              text,
-            }),
-          }
-        );
+        await fetch("/api/speak", {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            text,
+          }),
+        });
 
       if (!response.ok) {
         const data =
@@ -908,10 +1005,10 @@ export default function Home() {
             .json()
             .catch(() => null);
 
-        console.error(
-          "Voice playback failed:",
-          data?.error ||
-            response.status
+        alert(
+          "Voice playback failed: " +
+            (data?.error ||
+              `HTTP ${response.status}`)
         );
 
         return;
@@ -926,39 +1023,24 @@ export default function Home() {
       const audio =
         new Audio(url);
 
-      audioRef.current = audio;
-
       audio.onended = () => {
         URL.revokeObjectURL(url);
-
-        if (
-          audioRef.current ===
-          audio
-        ) {
-          audioRef.current = null;
-        }
       };
 
       await audio.play();
     } catch (error) {
-      console.error(
-        "Voice playback failed:",
-        error
+      alert(
+        "Voice playback failed: " +
+          error.message
       );
     }
   }
-
-  /* -----------------------------
-     send message
-  ----------------------------- */
 
   async function sendMessage() {
     const text =
       input.trim();
 
-    if (!text || loading) {
-      return;
-    }
+    if (!text || loading) return;
 
     const nextMessages = [
       ...messages,
@@ -974,143 +1056,94 @@ export default function Home() {
 
     try {
       const response =
-        await fetch(
-          "/api/chat",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              messages:
-                nextMessages,
-            }),
-          }
-        );
+        await fetch("/api/chat", {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            messages:
+              nextMessages,
+          }),
+        });
 
       const data =
         await response
           .json()
-          .catch(() => null);
+          .catch(() => ({}));
 
       if (!response.ok) {
-        setMessages(
-          (current) => [
-            ...current,
-            {
-              role: "assistant",
-              content:
-                data?.error ||
-                "Something went wrong.",
-              error: true,
-            },
-          ]
-        );
-
-        return;
-      }
-
-      const reply =
-        data?.reply ||
-        "I received your request, but no response was returned.";
-
-      setMessages(
-        (current) => [
-          ...current,
-          {
-            role: "assistant",
-            content: reply,
-          },
-        ]
-      );
-
-      await speak(reply);
-    } catch (error) {
-      console.error(error);
-
-      setMessages(
-        (current) => [
+        setMessages((current) => [
           ...current,
           {
             role: "assistant",
             content:
-              "I couldn't reach the server. Check your connection and try again.",
+              data.error ||
+              "Something went wrong.",
             error: true,
           },
-        ]
-      );
+        ]);
+
+        return;
+      }
+
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          content: data.reply,
+        },
+      ]);
+
+      speak(data.reply);
+    } catch {
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          content:
+            "I couldn't reach the server. Check your connection.",
+          error: true,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
   }
 
-  /* -----------------------------
-     keyboard
-  ----------------------------- */
-
-  function handleKeyDown(event) {
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
-      event.preventDefault();
-      sendMessage();
-    }
-  }
-
-  /* -----------------------------
-     boot screen
-  ----------------------------- */
-
   if (!booted) {
     return (
-      <main className="boot-screen">
-        <div className="boot-core">
-          <div className="boot-core-dot" />
-        </div>
-
-        <div className="boot-lines">
-          {BOOT_LINES.slice(
-            0,
-            visibleBootLines
-          ).map((line, index) => (
-            <div
-              key={index}
-              className={`boot-line ${
-                line.dim
-                  ? "dim"
-                  : ""
-              }`}
-            >
-              {line.text}
-            </div>
-          ))}
-        </div>
-      </main>
+      <div className="boot-screen">
+        {BOOT_LINES.slice(
+          0,
+          visibleBootLines
+        ).map((line, index) => (
+          <div
+            key={index}
+            className={`boot-line ${
+              line.dim ? "dim" : ""
+            }`}
+          >
+            {line.text}
+          </div>
+        ))}
+      </div>
     );
   }
 
   return (
-    <main className="jarvis-app">
-      {/* --------------------------------
-          HEADER
-      -------------------------------- */}
-
-      <header className="jarvis-header">
-        <div className="brand">
+    <main className="app">
+      <header className="header">
+        <div className="title-block">
           <div className="wordmark">
             J.A.R.V.I.S.
           </div>
 
-          <div className="system-status">
-            <span
-              className={`status-dot ${
-                loading
-                  ? "processing"
-                  : ""
-              }`}
-            />
+          <div className="status-line">
+            <span className="status-dot" />
 
             {loading
               ? "PROCESSING"
@@ -1119,142 +1152,111 @@ export default function Home() {
         </div>
 
         <button
-          type="button"
-          className={`voice-button ${
-            voiceOn
-              ? "active"
-              : ""
+          className={`voice-toggle ${
+            voiceOn ? "active" : ""
           }`}
           onClick={() =>
             setVoiceOn(
-              (value) =>
-                !value
+              (value) => !value
             )
           }
         >
-          <span className="voice-indicator" />
           VOICE{" "}
-          {voiceOn
-            ? "ON"
-            : "OFF"}
+          {voiceOn ? "ON" : "OFF"}
         </button>
       </header>
 
-      {/* --------------------------------
-          ENERGY CORE
-      -------------------------------- */}
-
-      <section className="core-container">
-        <JarvisCore
+      <section className="core-stage">
+        <EnergyCore
           thinking={loading}
         />
       </section>
 
-      {/* --------------------------------
-          CHAT
-      -------------------------------- */}
-
       <section
-        className="chat-log"
+        className="log"
         ref={logRef}
-        aria-live="polite"
       >
         {messages.map(
           (message, index) => (
-            <article
+            <div
               key={index}
-              className={`message ${
-                message.role
-              } ${
-                message.error
-                  ? "error"
-                  : ""
-              }`}
+              className={`msg-row ${message.role}`}
             >
-              <div className="message-label">
+              <div className="msg-label">
                 {message.role ===
                 "user"
                   ? "YOU"
                   : "JARVIS"}
               </div>
 
-              <div className="message-content">
+              <div
+                className={`bubble ${
+                  message.error
+                    ? "error"
+                    : ""
+                }`}
+              >
                 {message.content}
               </div>
-            </article>
+            </div>
           )
         )}
 
         {loading && (
-          <article className="message assistant">
-            <div className="message-label">
+          <div className="msg-row assistant">
+            <div className="msg-label">
               JARVIS
             </div>
 
-            <div className="thinking-indicator">
-              <span />
+            <div className="bubble thinking-row">
               <span />
               <span />
               <span />
             </div>
-          </article>
+          </div>
         )}
       </section>
 
-      {/* --------------------------------
-          INPUT
-      -------------------------------- */}
-
-      <footer className="input-area">
+      <footer className="input-bar">
         <button
-          type="button"
-          className={`control-button microphone ${
+          className={`icon-btn mic ${
             listening
               ? "listening"
               : ""
           }`}
           onClick={toggleMic}
-          aria-label="Voice input"
           title="Voice input"
         >
-          <span className="mic-icon">
-            🎙
-          </span>
+          🎙
         </button>
 
-        <div className="input-wrapper">
-          <input
-            type="text"
-            value={input}
-            onChange={(event) =>
-              setInput(
-                event.target.value
-              )
+        <input
+          value={input}
+          onChange={(event) =>
+            setInput(
+              event.target.value
+            )
+          }
+          onKeyDown={(event) => {
+            if (
+              event.key ===
+              "Enter"
+            ) {
+              sendMessage();
             }
-            onKeyDown={
-              handleKeyDown
-            }
-            placeholder={
-              listening
-                ? "Listening..."
-                : "Speak, and I shall listen..."
-            }
-            disabled={loading}
-            autoComplete="off"
-            spellCheck="false"
-          />
-        </div>
+          }}
+          placeholder="Speak, and I shall listen..."
+          disabled={loading}
+        />
 
         <button
-          type="button"
-          className="control-button send-button"
+          className="icon-btn send"
           onClick={sendMessage}
           disabled={
             loading ||
             !input.trim()
           }
-          aria-label="Send message"
-          title="Send message"
+          title="Send"
         >
           ➤
         </button>
