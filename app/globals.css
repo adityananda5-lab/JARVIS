@@ -123,40 +123,64 @@ body {
   overflow: visible;
 }
 
-.core .ring-outer {
-  animation: spin 22s linear infinite;
+.core .ring-orbit {
+  animation: spin 18s linear infinite;
   transform-origin: 50px 50px;
 }
 
-.core .ring-mid {
-  animation: spin 16s linear infinite reverse;
+.core .ring-outer {
+  animation: spin 26s linear infinite reverse;
   transform-origin: 50px 50px;
 }
 
 .core .ring-inner {
-  animation: spin 9s linear infinite;
+  animation: spin 11s linear infinite;
   transform-origin: 50px 50px;
 }
 
 .core .streaks {
-  animation: spin 30s linear infinite reverse;
+  animation: spin 34s linear infinite reverse;
   transform-origin: 50px 50px;
 }
 
-.core.thinking .ring-outer {
-  animation-duration: 4s;
+.core .particles {
+  animation: spin 60s linear infinite;
+  transform-origin: 50px 50px;
 }
 
-.core.thinking .ring-mid {
-  animation-duration: 3s;
+.particle {
+  animation: twinkle 2.4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.core.thinking .ring-orbit {
+  animation-duration: 3.2s;
+}
+
+.core.thinking .ring-outer {
+  animation-duration: 4.5s;
 }
 
 .core.thinking .ring-inner {
-  animation-duration: 1.6s;
+  animation-duration: 1.8s;
 }
 
 .core.thinking .streaks {
-  animation-duration: 5s;
+  animation-duration: 5.5s;
+}
+
+.core.thinking .particles {
+  animation-duration: 10s;
 }
 
 .core .core-glow {
