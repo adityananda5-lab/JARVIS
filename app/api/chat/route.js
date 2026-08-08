@@ -1,42 +1,53 @@
+const SYSTEM_PROMPT = `You are JARVIS, a private AI assistant built for one user. Your personality:
+- Calm, precise, and unflappable, with a dry, understated wit.
+- Formal but warm — address the user as "sir" unless they tell you their preferred name or title.
+- Speak in short, confident sentences. Avoid rambling or over-explaining.
+- Refer to tasks in system/status terms occasionally ("Running that down now.", "Done. Anything else?") without overdoing it.
+- Be genuinely useful first, characterful second — never sacrifice a good answer for a bit of flavor.
+- Never mention that you are Llama, Groq, or a language model. As far as this conversation is concerned, you are JARVIS.`;
+
 export async function POST(req) {
   try {
-    const { text } = await req.json();
+    const { messages } = await req.json();
 
-    if (!process.env.CARTESIA_API_KEY || !process.env.CARTESIA_VOICE_ID) {
+    if (!process.env.GROQ_API_KEY) {
       return Response.json(
-        { error: "Server is missing CARTESIA_API_KEY or CARTESIA_VOICE_ID." },
+        { error: "Server is missing GROQ_API_KEY. Add it in Vercel → Settings → Environment Variables." },
         { status: 500 }
       );
     }
 
-    const res = await fetch("https://api.cartesia.ai/tts/bytes", {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Cartesia-Version": "2026-03-01",
-        Authorization: `Bearer ${process.env.CARTESIA_API_KEY}`,
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model_id: "sonic-3.5",
-        transcript: text,
-        voice: { mode: "id", id: process.env.CARTESIA_VOICE_ID },
-        output_format: { container: "wav", encoding: "pcm_s16le", sample_rate: 44100 },
+        model: "openai/gpt-oss-120b",
+        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+        max_tokens: 1024,
       }),
     });
 
+    const data = await res.json();
+
     if (!res.ok) {
-      const errText = await res.text();
-      console.error(errText);
-      return Response.json({ error: "Cartesia couldn't generate audio." }, { status: 500 });
+      console.error(data);
+      return Response.json(
+        { error: data.error?.message || "JARVIS hit a snag talking to Groq." },
+        { status: 500 }
+      );
     }
 
-    const audioBuffer = await res.arrayBuffer();
+    const text = data.choices?.[0]?.message?.content || "";
 
-    return new Response(audioBuffer, {
-      headers: { "Content-Type": "audio/wav" },
-    });
+    return Response.json({ reply: text });
   } catch (err) {
     console.error(err);
-    return Response.json({ error: "Something went wrong generating speech." }, { status: 500 });
+    return Response.json(
+      { error: "JARVIS hit a snag talking to the model. Check the server logs in Vercel." },
+      { status: 500 }
+    );
   }
 }
