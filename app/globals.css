@@ -1,18 +1,20 @@
 :root {
-  --bg: #010509;
-  --panel: rgba(3, 13, 21, 0.62);
-
-  --panel-border:
-    rgba(45, 220, 255, 0.16);
+  --bg: #010407;
 
   --cyan: #35eaff;
   --cyan-bright: #dfffff;
   --blue: #008cff;
 
-  --text: #e8fbff;
+  --text: #e9fbff;
   --text-dim: #68838b;
 
   --danger: #ff4f6d;
+
+  --panel:
+    rgba(2, 13, 21, 0.58);
+
+  --border:
+    rgba(53, 234, 255, 0.13);
 
   --font-display:
     "Orbitron",
@@ -27,44 +29,41 @@
     sans-serif;
 }
 
-/* =========================================================
-   RESET
-========================================================= */
-
 * {
   box-sizing: border-box;
 }
 
 html,
 body {
-  margin: 0;
-  padding: 0;
-
   width: 100%;
   height: 100%;
 
-  background: var(--bg);
-  color: var(--text);
-
-  font-family: var(--font-body);
+  margin: 0;
+  padding: 0;
 
   overflow: hidden;
+
+  background: #010407;
+
+  color: var(--text);
+
+  font-family:
+    var(--font-body);
 }
 
 body {
   background:
     radial-gradient(
-      circle at 50% 50%,
-      rgba(0, 170, 255, 0.08),
-      transparent 38%
+      ellipse at center,
+      rgba(
+        0,
+        130,
+        190,
+        0.055
+      ),
+      transparent 48%
     ),
-    radial-gradient(
-      circle at 50% 50%,
-      rgba(0, 80, 160, 0.08),
-      transparent 65%
-    );
-
-  background-color: #010509;
+    #010407;
 }
 
 /* =========================================================
@@ -79,56 +78,71 @@ body {
 
   flex-direction: column;
 
-  align-items: center;
   justify-content: center;
+  align-items: center;
 
   gap: 18px;
-
-  font-family: var(--font-mono);
-
-  color: var(--cyan);
 
   background:
     radial-gradient(
       circle,
-      rgba(0, 200, 255, 0.08),
+      rgba(
+        0,
+        220,
+        255,
+        0.08
+      ),
       transparent 45%
     );
 
-  letter-spacing: 0.08em;
+  font-family:
+    var(--font-mono);
+
+  color:
+    var(--cyan);
 }
 
 .boot-line {
-  font-size: 13px;
+  font-size: 12px;
+
+  letter-spacing: 0.12em;
 
   opacity: 0;
 
   animation:
-    boot-fade
-    0.4s
+    bootFade
+    0.45s
     ease
     forwards;
 
   text-shadow:
-    0 0 12px
-    rgba(50, 230, 255, 0.5);
+    0 0 15px
+    rgba(
+      53,
+      234,
+      255,
+      0.65
+    );
 }
 
 .boot-line.dim {
-  color: var(--text-dim);
+  color:
+    var(--text-dim);
 
   text-shadow: none;
 }
 
-@keyframes boot-fade {
+@keyframes bootFade {
   from {
     opacity: 0;
+
     transform:
-      translateY(4px);
+      translateY(5px);
   }
 
   to {
     opacity: 1;
+
     transform:
       translateY(0);
   }
@@ -139,23 +153,176 @@ body {
 ========================================================= */
 
 .app {
+  position: relative;
+
   width: 100vw;
   height: 100dvh;
 
-  display: flex;
-
-  flex-direction: column;
-
-  position: relative;
-
   overflow: hidden;
+
+  isolation: isolate;
 
   background:
     radial-gradient(
-      circle at center,
-      rgba(0, 180, 255, 0.035),
-      transparent 50%
+      ellipse at center,
+      rgba(
+        0,
+        120,
+        190,
+        0.025
+      ),
+      transparent 65%
     );
+}
+
+/* =========================================================
+   FULL SCREEN ENERGY
+========================================================= */
+
+.core-stage {
+  position: fixed;
+
+  inset: 0;
+
+  width: 100vw;
+  height: 100dvh;
+
+  z-index: 1;
+
+  pointer-events: none;
+}
+
+.core {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  transition:
+    filter
+    0.8s
+    ease;
+}
+
+.core canvas {
+  width: 100% !important;
+  height: 100% !important;
+
+  display: block;
+}
+
+/*
+   Processing:
+   slightly increase the perceived
+   energy before speech begins.
+*/
+
+.core.thinking {
+  filter:
+    brightness(1.12)
+    saturate(1.15);
+}
+
+/*
+   Speaking:
+   the shader itself reacts to audio,
+   while this adds only a subtle
+   optical response.
+*/
+
+.core.speaking {
+  filter:
+    brightness(1.08)
+    saturate(1.1);
+}
+
+/* =========================================================
+   HUD GRID
+========================================================= */
+
+.hud-grid {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 2;
+
+  pointer-events: none;
+
+  opacity: 0.14;
+
+  background-image:
+    linear-gradient(
+      rgba(
+        53,
+        234,
+        255,
+        0.025
+      )
+      1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(
+        53,
+        234,
+        255,
+        0.025
+      )
+      1px,
+      transparent 1px
+    );
+
+  background-size:
+    90px 90px;
+
+  mask-image:
+    radial-gradient(
+      ellipse at center,
+      black,
+      transparent 68%
+    );
+}
+
+/* =========================================================
+   SCANLINES
+========================================================= */
+
+.scanlines {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 15;
+
+  pointer-events: none;
+
+  opacity: 0.035;
+
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(
+        255,
+        255,
+        255,
+        0.06
+      ) 0px,
+      rgba(
+        255,
+        255,
+        255,
+        0.06
+      ) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+
+  mix-blend-mode:
+    screen;
 }
 
 /* =========================================================
@@ -163,22 +330,21 @@ body {
 ========================================================= */
 
 .header {
-  position: absolute;
+  position: fixed;
 
   top: 0;
   left: 0;
   right: 0;
 
-  z-index: 20;
+  z-index: 30;
 
   display: flex;
 
   align-items: center;
-
   justify-content: space-between;
 
   padding:
-    20px 24px;
+    22px 26px;
 
   pointer-events: none;
 }
@@ -195,20 +361,30 @@ body {
   font-family:
     var(--font-display);
 
+  font-size: 19px;
+
   font-weight: 700;
 
-  font-size: 20px;
-
-  letter-spacing: 0.2em;
+  letter-spacing: 0.22em;
 
   color:
     var(--cyan-bright);
 
   text-shadow:
     0 0 12px
-      rgba(53, 234, 255, 0.75),
-    0 0 35px
-      rgba(0, 160, 255, 0.3);
+      rgba(
+        53,
+        234,
+        255,
+        0.75
+      ),
+    0 0 40px
+      rgba(
+        0,
+        150,
+        255,
+        0.3
+      );
 }
 
 .status-line {
@@ -221,17 +397,17 @@ body {
   font-family:
     var(--font-mono);
 
-  font-size: 10px;
+  font-size: 9px;
 
-  letter-spacing: 0.14em;
+  letter-spacing: 0.15em;
 
   color:
     var(--text-dim);
 }
 
 .status-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 
   border-radius: 50%;
 
@@ -241,40 +417,76 @@ body {
   box-shadow:
     0 0 7px
       var(--cyan),
-    0 0 16px
-      rgba(53, 234, 255, 0.7);
+    0 0 18px
+      rgba(
+        53,
+        234,
+        255,
+        0.8
+      );
 
   animation:
-    blink
+    statusBlink
     2s
     ease-in-out
     infinite;
 }
 
-@keyframes blink {
+.status-dot.speaking {
+  animation:
+    speakingDot
+    0.32s
+    ease-in-out
+    infinite
+    alternate;
+}
+
+@keyframes statusBlink {
   0%,
   100% {
     opacity: 1;
   }
 
   50% {
-    opacity: 0.3;
+    opacity: 0.25;
+  }
+}
+
+@keyframes speakingDot {
+  from {
+    transform:
+      scale(0.75);
+  }
+
+  to {
+    transform:
+      scale(1.7);
   }
 }
 
 /* =========================================================
-   VOICE
+   VOICE BUTTON
 ========================================================= */
 
 .voice-toggle {
   pointer-events: auto;
 
-  background:
-    rgba(0, 15, 24, 0.5);
+  padding:
+    7px 12px;
 
   border:
     1px solid
-    var(--panel-border);
+    var(--border);
+
+  border-radius: 3px;
+
+  background:
+    rgba(
+      2,
+      15,
+      23,
+      0.45
+    );
 
   color:
     var(--text-dim);
@@ -282,38 +494,44 @@ body {
   font-family:
     var(--font-mono);
 
-  font-size: 10px;
+  font-size: 9px;
 
   letter-spacing: 0.1em;
 
-  padding:
-    7px 11px;
-
-  border-radius: 3px;
+  backdrop-filter:
+    blur(12px);
 
   cursor: pointer;
 
-  backdrop-filter:
-    blur(10px);
-
   transition:
-    all 0.25s ease;
+    0.25s ease;
 }
 
 .voice-toggle:hover {
-  border-color:
-    var(--cyan);
-
   color:
     var(--cyan);
 
+  border-color:
+    rgba(
+      53,
+      234,
+      255,
+      0.45
+    );
+
   box-shadow:
-    0 0 15px
-      rgba(53, 234, 255, 0.15);
+    0 0 18px
+    rgba(
+      53,
+      234,
+      255,
+      0.12
+    );
 }
 
 .voice-toggle.active {
-  color: #001016;
+  color:
+    #001016;
 
   background:
     var(--cyan);
@@ -322,107 +540,178 @@ body {
     var(--cyan);
 
   box-shadow:
-    0 0 20px
-      rgba(53, 234, 255, 0.45);
+    0 0 25px
+    rgba(
+      53,
+      234,
+      255,
+      0.42
+    );
 }
 
 /* =========================================================
-   FULL SCREEN CORE
+   CENTER RETICLE
 ========================================================= */
 
-.core-stage {
+.reticle {
   position: fixed;
 
-  inset: 0;
+  left: 50%;
+  top: 50%;
 
-  width: 100vw;
-  height: 100dvh;
+  width: 150px;
+  height: 150px;
 
-  z-index: 1;
+  transform:
+    translate(
+      -50%,
+      -50%
+    );
+
+  z-index: 5;
 
   pointer-events: none;
 
-  overflow: hidden;
-}
-
-.core {
-  position: absolute;
-
-  left: -10vw;
-  top: -10vh;
-
-  width: 120vw;
-  height: 120vh;
-
-  transform:
-    scale(0.72);
-
-  transform-origin:
-    center center;
+  opacity: 0.32;
 
   transition:
-    transform
-    1.8s
-    cubic-bezier(
-      0.16,
-      1,
-      0.3,
-      1
-    );
-
-  filter:
-    drop-shadow(
-      0 0 35px
-      rgba(0, 210, 255, 0.16)
-    );
+    opacity 0.6s ease,
+    transform 1s
+      cubic-bezier(
+        0.16,
+        1,
+        0.3,
+        1
+      );
 }
 
-.core.thinking {
+.reticle.active {
+  opacity: 0.65;
+
   transform:
+    translate(
+      -50%,
+      -50%
+    )
     scale(1.18);
-
-  filter:
-    drop-shadow(
-      0 0 90px
-      rgba(0, 220, 255, 0.42)
-    );
 }
 
-.core-canvas-wrap {
-  width: 100%;
-  height: 100%;
-}
-
-.core canvas {
+.reticle-ring {
   position: absolute;
 
   inset: 0;
 
-  width: 100% !important;
-  height: 100% !important;
+  border-radius: 50%;
 
-  display: block;
+  border:
+    1px solid
+    rgba(
+      53,
+      234,
+      255,
+      0.16
+    );
+}
+
+.ring-one {
+  animation:
+    rotateRing
+    20s
+    linear
+    infinite;
+}
+
+.ring-two {
+  inset: 18px;
+
+  border-style:
+    dashed;
+
+  animation:
+    rotateRingReverse
+    14s
+    linear
+    infinite;
+}
+
+.ring-three {
+  inset: 38px;
+
+  border:
+    1px solid
+    rgba(
+      53,
+      234,
+      255,
+      0.25
+    );
+
+  box-shadow:
+    0 0 20px
+    rgba(
+      53,
+      234,
+      255,
+      0.08
+    );
+
+  animation:
+    pulseRing
+    2.5s
+    ease-in-out
+    infinite;
+}
+
+@keyframes rotateRing {
+  to {
+    transform:
+      rotate(360deg);
+  }
+}
+
+@keyframes rotateRingReverse {
+  to {
+    transform:
+      rotate(-360deg);
+  }
+}
+
+@keyframes pulseRing {
+  0%,
+  100% {
+    transform:
+      scale(0.92);
+
+    opacity: 0.4;
+  }
+
+  50% {
+    transform:
+      scale(1.06);
+
+    opacity: 1;
+  }
 }
 
 /* =========================================================
-   CHAT HUD
+   CHAT
 ========================================================= */
 
 .log {
   position: fixed;
 
   left: 24px;
-  bottom: 98px;
+  bottom: 96px;
+
+  z-index: 25;
 
   width:
     min(
-      410px,
+      400px,
       calc(100vw - 48px)
     );
 
-  max-height: 27vh;
-
-  z-index: 10;
+  max-height: 25vh;
 
   overflow-y: auto;
 
@@ -430,29 +719,29 @@ body {
 
   flex-direction: column;
 
-  gap: 10px;
+  gap: 9px;
 
-  padding: 5px;
+  padding:
+    5px;
 
-  pointer-events: auto;
-
-  scrollbar-width: thin;
+  scrollbar-width:
+    thin;
 
   scrollbar-color:
-    rgba(53, 234, 255, 0.18)
+    rgba(
+      53,
+      234,
+      255,
+      0.18
+    )
     transparent;
 
-  /*
-   * Makes the chat fade into the
-   * environment instead of looking
-   * like a conventional chat window.
-   */
   mask-image:
     linear-gradient(
       to bottom,
-      transparent 0%,
+      transparent,
       black 12%,
-      black 100%
+      black
     );
 }
 
@@ -462,9 +751,12 @@ body {
 
 .log::-webkit-scrollbar-thumb {
   background:
-    rgba(53, 234, 255, 0.2);
-
-  border-radius: 2px;
+    rgba(
+      53,
+      234,
+      255,
+      0.18
+    );
 }
 
 .msg-row {
@@ -476,39 +768,45 @@ body {
 }
 
 .msg-row.user {
-  align-self: flex-end;
+  align-self:
+    flex-end;
 
-  align-items: flex-end;
+  align-items:
+    flex-end;
 }
 
 .msg-row.assistant {
-  align-self: flex-start;
+  align-self:
+    flex-start;
 
-  align-items: flex-start;
+  align-items:
+    flex-start;
 }
 
 .msg-label {
+  margin-bottom: 3px;
+
+  padding:
+    0 4px;
+
   font-family:
     var(--font-mono);
 
   font-size: 8px;
 
-  letter-spacing: 0.15em;
+  letter-spacing:
+    0.15em;
 
   color:
-    rgba(130, 190, 205, 0.65);
-
-  margin-bottom: 3px;
-
-  padding:
-    0 4px;
+    rgba(
+      130,
+      190,
+      205,
+      0.6
+    );
 }
 
 .bubble {
-  position: relative;
-
-  max-width: 100%;
-
   padding:
     7px 10px;
 
@@ -521,49 +819,73 @@ body {
   white-space: pre-wrap;
 
   background:
-    rgba(2, 14, 23, 0.45);
+    rgba(
+      2,
+      14,
+      23,
+      0.42
+    );
 
   border:
     1px solid
-    rgba(45, 220, 255, 0.08);
+    rgba(
+      53,
+      234,
+      255,
+      0.08
+    );
 
   backdrop-filter:
-    blur(8px);
+    blur(10px);
 
   box-shadow:
-    0 0 25px
-    rgba(0, 130, 180, 0.04);
+    0 0 30px
+    rgba(
+      0,
+      130,
+      180,
+      0.035
+    );
 }
 
 .msg-row.assistant
 .bubble {
   border-left:
     2px solid
-    rgba(53, 234, 255, 0.75);
-
-  color:
-    rgba(225, 249, 255, 0.9);
+    rgba(
+      53,
+      234,
+      255,
+      0.7
+    );
 }
 
 .msg-row.user
 .bubble {
   border-right:
     2px solid
-    rgba(0, 150, 255, 0.65);
-
-  color:
-    rgba(225, 249, 255, 0.8);
+    rgba(
+      0,
+      150,
+      255,
+      0.6
+    );
 
   background:
-    rgba(0, 70, 110, 0.18);
+    rgba(
+      0,
+      70,
+      110,
+      0.16
+    );
 }
 
 .bubble.error {
-  border-left-color:
-    var(--danger);
-
   color:
     #ffb3c0;
+
+  border-left-color:
+    var(--danger);
 }
 
 /* =========================================================
@@ -574,9 +896,6 @@ body {
   display: flex;
 
   gap: 4px;
-
-  padding:
-    9px 12px;
 }
 
 .thinking-row span {
@@ -589,7 +908,7 @@ body {
     var(--cyan);
 
   box-shadow:
-    0 0 7px
+    0 0 8px
     var(--cyan);
 
   animation:
@@ -618,16 +937,14 @@ span:nth-child(3) {
     transform:
       translateY(0);
 
-    opacity:
-      0.35;
+    opacity: 0.3;
   }
 
   30% {
     transform:
       translateY(-4px);
 
-    opacity:
-      1;
+    opacity: 1;
   }
 }
 
@@ -639,44 +956,64 @@ span:nth-child(3) {
   position: fixed;
 
   left: 50%;
-  bottom: 20px;
+  bottom: 18px;
 
   transform:
     translateX(-50%);
 
-  z-index: 20;
+  z-index: 30;
 
   width:
     min(
       720px,
-      calc(100vw - 30px)
+      calc(100vw - 24px)
     );
 
   display: flex;
 
   align-items: center;
 
-  gap: 9px;
+  gap: 8px;
 
   padding: 8px;
 
   border:
     1px solid
-    rgba(53, 234, 255, 0.12);
+    rgba(
+      53,
+      234,
+      255,
+      0.12
+    );
+
+  border-radius: 4px;
 
   background:
-    rgba(1, 9, 15, 0.68);
+    rgba(
+      1,
+      9,
+      15,
+      0.62
+    );
 
   backdrop-filter:
-    blur(16px);
-
-  border-radius: 5px;
+    blur(18px);
 
   box-shadow:
-    0 0 35px
-      rgba(0, 150, 220, 0.06),
+    0 0 40px
+      rgba(
+        0,
+        150,
+        220,
+        0.06
+      ),
     inset 0 0 25px
-      rgba(0, 170, 255, 0.025);
+      rgba(
+        0,
+        170,
+        255,
+        0.025
+      );
 }
 
 .input-bar input {
@@ -684,12 +1021,15 @@ span:nth-child(3) {
 
   min-width: 0;
 
-  background:
-    transparent;
+  padding:
+    9px 5px;
 
   border: none;
 
   outline: none;
+
+  background:
+    transparent;
 
   color:
     var(--text);
@@ -698,23 +1038,17 @@ span:nth-child(3) {
     var(--font-mono);
 
   font-size: 12px;
-
-  padding:
-    9px 5px;
 }
 
 .input-bar input::placeholder {
   color:
-    rgba(110, 150, 160, 0.55);
+    rgba(
+      110,
+      150,
+      160,
+      0.5
+    );
 }
-
-.input-bar input:focus {
-  box-shadow: none;
-}
-
-/* =========================================================
-   BUTTONS
-========================================================= */
 
 .icon-btn {
   width: 38px;
@@ -722,27 +1056,37 @@ span:nth-child(3) {
 
   flex-shrink: 0;
 
-  border-radius: 3px;
-
-  border:
-    1px solid
-    rgba(53, 234, 255, 0.13);
-
-  background:
-    rgba(3, 20, 29, 0.7);
-
-  color:
-    var(--cyan);
-
   display: flex;
 
   align-items: center;
   justify-content: center;
 
+  border:
+    1px solid
+    rgba(
+      53,
+      234,
+      255,
+      0.13
+    );
+
+  border-radius: 3px;
+
+  background:
+    rgba(
+      3,
+      20,
+      29,
+      0.72
+    );
+
+  color:
+    var(--cyan);
+
   cursor: pointer;
 
   transition:
-    all 0.2s ease;
+    0.2s ease;
 }
 
 .icon-btn:hover {
@@ -750,8 +1094,13 @@ span:nth-child(3) {
     var(--cyan);
 
   box-shadow:
-    0 0 15px
-      rgba(53, 234, 255, 0.2);
+    0 0 18px
+    rgba(
+      53,
+      234,
+      255,
+      0.2
+    );
 }
 
 .icon-btn.mic.listening {
@@ -766,26 +1115,12 @@ span:nth-child(3) {
 
   box-shadow:
     0 0 25px
-      rgba(255, 79, 109, 0.45);
-
-  animation:
-    mic-pulse
-    1s
-    ease-in-out
-    infinite;
-}
-
-@keyframes mic-pulse {
-  0%,
-  100% {
-    transform:
-      scale(1);
-  }
-
-  50% {
-    transform:
-      scale(1.08);
-  }
+    rgba(
+      255,
+      79,
+      109,
+      0.45
+    );
 }
 
 .icon-btn.send {
@@ -800,13 +1135,23 @@ span:nth-child(3) {
 
   box-shadow:
     0 0 15px
-      rgba(53, 234, 255, 0.2);
+    rgba(
+      53,
+      234,
+      255,
+      0.2
+    );
 }
 
 .icon-btn.send:hover {
   box-shadow:
     0 0 25px
-      rgba(53, 234, 255, 0.45);
+    rgba(
+      53,
+      234,
+      255,
+      0.45
+    );
 }
 
 .icon-btn:disabled {
@@ -825,39 +1170,36 @@ span:nth-child(3) {
 @media (max-width: 600px) {
   .header {
     padding:
-      16px 15px;
+      16px 14px;
   }
 
   .wordmark {
-    font-size: 16px;
+    font-size: 15px;
   }
 
-  .core {
-    left: -25vw;
-    top: -10vh;
-
-    width: 150vw;
-    height: 120vh;
+  .reticle {
+    width: 110px;
+    height: 110px;
   }
 
   .log {
-    left: 14px;
-    bottom: 92px;
+    left: 12px;
+    bottom: 88px;
 
     width:
-      calc(100vw - 28px);
+      calc(100vw - 24px);
 
-    max-height: 22vh;
-  }
-
-  .input-bar {
-    bottom: 12px;
-
-    width:
-      calc(100vw - 20px);
+    max-height: 21vh;
   }
 
   .bubble {
     font-size: 10px;
+  }
+
+  .input-bar {
+    bottom: 10px;
+
+    width:
+      calc(100vw - 18px);
   }
 }
