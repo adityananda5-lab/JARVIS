@@ -9,86 +9,82 @@ const BOOT_LINES = [
   { text: "ALL SYSTEMS NOMINAL", dim: false },
 ];
 
-// Deterministic pseudo-random generator — same output every render, client and server,
-// so nothing shifts or mismatches after the page loads
-function rand(seed) {
+function rand(seed: number) {
   const x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
 }
 
-// Scattered dust particles floating around the sphere
-const PARTICLES = Array.from({ length: 50 }).map((_, i) => {
+const PARTICLES = Array.from({ length: 80 }).map((_, i) => {
   const angle = i * 137.508 * (Math.PI / 180);
-  const radius = 28 + rand(i * 12.9898) * 32;
-  const size = 0.3 + rand(i * 7.233) * 0.5;
-  const opacity = 0.2 + rand(i * 3.71) * 0.6;
+  const radius = 26 + rand(i * 12.9898) * 34;
+  const size = 0.4 + rand(i * 7.233) * 0.7;
+  const opacity = 0.3 + rand(i * 3.71) * 0.7;
   return {
     x: 50 + radius * Math.cos(angle),
     y: 50 + radius * Math.sin(angle),
     size,
     opacity,
-    delay: (i % 10) * 0.3,
+    delay: (i % 10) * 0.25,
   };
 });
 
-// A handful of long straight spikes for accent, kept few so they don't drown out the curved mesh
-const RAYS = Array.from({ length: 12 }).map((_, i) => {
+const RAYS = Array.from({ length: 24 }).map((_, i) => {
   const angle = rand(i * 91.7) * 360;
-  const length = 34 + rand(i * 4.51) * 26;
+  const length = 40 + rand(i * 4.51) * 35;
   return { angle, length };
 });
 
-// Dense tangle of curved chords crossing through the sphere — cubic beziers with
-// two independent control points so they visibly loop and bend, not just barely bow
-function makeMesh(count, seedOffset) {
+function makeMesh(count: number, seedOffset: number) {
   return Array.from({ length: count }).map((_, i) => {
     const s = i + seedOffset;
     const a1 = rand(s * 12.9898) * 360;
-    const spread = 60 + rand(s * 78.233) * 240;
+    const spread = 80 + rand(s * 78.233) * 260;
     const a2 = a1 + spread;
-    const r1 = 22 + rand(s * 45.164) * 24;
-    const r2 = 22 + rand(s * 91.345) * 24;
+    const r1 = 20 + rand(s * 45.164) * 26;
+    const r2 = 20 + rand(s * 91.345) * 26;
     const x1 = 50 + r1 * Math.cos((a1 * Math.PI) / 180);
     const y1 = 50 + r1 * Math.sin((a1 * Math.PI) / 180);
     const x2 = 50 + r2 * Math.cos((a2 * Math.PI) / 180);
     const y2 = 50 + r2 * Math.sin((a2 * Math.PI) / 180);
 
-    // Two independent control points, each free to land anywhere in a wide radius —
-    // this is what creates real loops and S-bends instead of near-straight lines
     const c1Angle = rand(s * 17.91) * 360;
-    const c1Radius = 5 + rand(s * 61.3) * 42;
+    const c1Radius = 6 + rand(s * 61.3) * 45;
     const c2Angle = rand(s * 29.44) * 360;
-    const c2Radius = 5 + rand(s * 8.77) * 42;
+    const c2Radius = 6 + rand(s * 8.77) * 45;
     const c1x = 50 + c1Radius * Math.cos((c1Angle * Math.PI) / 180);
     const c1y = 50 + c1Radius * Math.sin((c1Angle * Math.PI) / 180);
     const c2x = 50 + c2Radius * Math.cos((c2Angle * Math.PI) / 180);
     const c2y = 50 + c2Radius * Math.sin((c2Angle * Math.PI) / 180);
 
     return {
-      d: `M${x1.toFixed(2)},${y1.toFixed(2)} C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${x2.toFixed(2)},${y2.toFixed(2)}`,
-      opacity: 0.4 + rand(s * 17.34) * 0.45,
-      width: 0.5 + rand(s * 3.14) * 0.5,
+      d: `M${x1.toFixed(2)},${y1.toFixed(2)} C${c1x.toFixed(
+        2
+      )},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(
+        2
+      )} ${x2.toFixed(2)},${y2.toFixed(2)}`,
+      opacity: 0.4 + rand(s * 17.34) * 0.5,
+      width: 0.7 + rand(s * 3.14) * 0.7,
     };
   });
 }
 
-const MESH_A = makeMesh(38, 1);
-const MESH_B = makeMesh(38, 500);
+const MESH_A = makeMesh(60, 1);
+const MESH_B = makeMesh(60, 500);
 
-function Core({ thinking }) {
+function Core({ thinking }: { thinking: boolean }) {
   return (
     <div className={`core${thinking ? " thinking" : ""}`}>
       <svg viewBox="0 0 100 100">
         <defs>
           <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="25%" stopColor="#fff4e0" />
-            <stop offset="50%" stopColor="var(--gold-bright)" />
-            <stop offset="80%" stopColor="var(--ember)" />
-            <stop offset="100%" stopColor="var(--ember)" stopOpacity="0" />
+            <stop offset="20%" stopColor="#fff8e5" />
+            <stop offset="45%" stopColor="#ffd27a" />
+            <stop offset="70%" stopColor="#ff9b2f" />
+            <stop offset="100%" stopColor="#ff7a18" stopOpacity="0" />
           </radialGradient>
           <filter id="softBlur" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1.2" />
+            <feGaussianBlur stdDeviation="2.4" />
           </filter>
         </defs>
 
@@ -109,13 +105,29 @@ function Core({ thinking }) {
 
         <g className="mesh-a">
           {MESH_A.map((m, i) => (
-            <path key={i} d={m.d} fill="none" stroke="var(--ember)" strokeWidth={m.width} opacity={m.opacity} strokeLinecap="round" />
+            <path
+              key={i}
+              d={m.d}
+              fill="none"
+              stroke="var(--ember)"
+              strokeWidth={m.width}
+              opacity={m.opacity}
+              strokeLinecap="round"
+            />
           ))}
         </g>
 
         <g className="mesh-b">
           {MESH_B.map((m, i) => (
-            <path key={i} d={m.d} fill="none" stroke="var(--gold-bright)" strokeWidth={m.width} opacity={m.opacity} strokeLinecap="round" />
+            <path
+              key={i}
+              d={m.d}
+              fill="none"
+              stroke="var(--gold-bright)"
+              strokeWidth={m.width}
+              opacity={m.opacity}
+              strokeLinecap="round"
+            />
           ))}
         </g>
 
@@ -128,71 +140,81 @@ function Core({ thinking }) {
               x2={50 + r.length * Math.cos((r.angle * Math.PI) / 180)}
               y2={50 + r.length * Math.sin((r.angle * Math.PI) / 180)}
               stroke="var(--gold-bright)"
-              strokeWidth="0.4"
-              opacity="0.55"
+              strokeWidth="0.7"
+              opacity="0.65"
               strokeLinecap="round"
             />
           ))}
         </g>
 
         <g className="core-glow">
-          <circle cx="50" cy="50" r="18" fill="url(#coreGlow)" />
-          <circle cx="50" cy="50" r="4" fill="#ffffff" filter="url(#softBlur)" />
+          <circle cx="50" cy="50" r="23" fill="url(#coreGlow)" />
+          <circle
+            cx="50"
+            cy="50"
+            r="5"
+            fill="#ffffff"
+            filter="url(#softBlur)"
+          />
         </g>
       </svg>
     </div>
   );
 }
 
+type Msg = { role: "user" | "assistant"; content: string; error?: boolean };
+
 export default function Home() {
   const [booted, setBooted] = useState(false);
   const [visibleBootLines, setVisibleBootLines] = useState(0);
-  const [messages, setMessages] = useState([
-    { role: "assistant", content: "Good to see you. Systems are online — how can I help?" },
+  const [messages, setMessages] = useState<Msg[]>([
+    {
+      role: "assistant",
+      content: "Good to see you. Systems are online — how can I help?",
+    },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const [listening, setListening] = useState(false);
-  const logRef = useRef(null);
-  const recognitionRef = useRef(null);
+  const logRef = useRef<HTMLDivElement | null>(null);
+  const recognitionRef = useRef<any>(null);
 
-  // Boot sequence
   useEffect(() => {
     if (visibleBootLines < BOOT_LINES.length) {
-      const t = setTimeout(() => setVisibleBootLines((n) => n + 1), 380);
+      const t = setTimeout(
+        () => setVisibleBootLines((n) => n + 1),
+        380
+      );
       return () => clearTimeout(t);
     }
-    const t = setTimeout(() => setBooted(true), 500);
+    const t = setTimeout(() => setBooted(true), 600);
     return () => clearTimeout(t);
   }, [visibleBootLines]);
 
-  // Auto-scroll chat log
   useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
+    logRef.current?.scrollTo({
+      top: logRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages, loading]);
 
-  // Set up speech recognition if the browser supports it
   useEffect(() => {
-    const SpeechRecognition = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
+    const SpeechRecognition =
+      typeof window !== "undefined" &&
+      ((window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition);
     if (!SpeechRecognition) return;
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = "en-US";
-    recognition.onresult = (e) => {
+    recognition.onresult = (e: any) => {
       const transcript = e.results[0][0].transcript;
       setInput(transcript);
     };
-    recognition.onerror = (e) => {
+    recognition.onerror = (e: any) => {
       setListening(false);
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        alert("Microphone access was blocked. Check your browser's site settings and allow the microphone for this page.");
-      } else if (e.error === "no-speech") {
-        // silently ignore — user just didn't say anything
-      } else {
-        alert("Voice input hit an error: " + e.error);
-      }
     };
     recognition.onend = () => setListening(false);
     recognitionRef.current = recognition;
@@ -201,7 +223,7 @@ export default function Home() {
   function toggleMic() {
     if (!recognitionRef.current) {
       alert(
-        "Voice input isn't supported in this browser. Safari (Mac and iPhone) doesn't support it yet — try Chrome or Edge instead."
+        "Voice input isn't supported in this browser. Try Chrome or Edge."
       );
       return;
     }
@@ -212,13 +234,13 @@ export default function Home() {
       try {
         recognitionRef.current.start();
         setListening(true);
-      } catch (err) {
+      } catch {
         setListening(false);
       }
     }
   }
 
-  async function speak(text) {
+  async function speak(text: string) {
     if (!voiceOn) return;
     try {
       const res = await fetch("/api/speak", {
@@ -226,25 +248,20 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        alert("Voice playback failed: " + (data?.error || `HTTP ${res.status}`));
-        return; // text reply is already shown either way
-      }
+      if (!res.ok) return;
       const audioBlob = await res.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       audio.play();
-    } catch (err) {
-      alert("Voice playback failed: " + err.message);
+    } catch {
+      // ignore
     }
   }
 
   async function sendMessage() {
     const text = input.trim();
     if (!text || loading) return;
-
-    const nextMessages = [...messages, { role: "user", content: text }];
+    const nextMessages: Msg[] = [...messages, { role: "user", content: text }];
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
@@ -257,14 +274,31 @@ export default function Home() {
       });
       const data = await res.json();
 
-      if (!res.ok) {
-        setMessages((m) => [...m, { role: "assistant", content: data.error || "Something went wrong.", error: true }]);
+      if (!res.ok || !data.reply) {
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            content: data.error || "Something went wrong.",
+            error: true,
+          },
+        ]);
       } else {
-        setMessages((m) => [...m, { role: "assistant", content: data.reply }]);
+        setMessages((m) => [
+          ...m,
+          { role: "assistant", content: data.reply },
+        ]);
         speak(data.reply);
       }
     } catch (err) {
-      setMessages((m) => [...m, { role: "assistant", content: "I couldn't reach the server. Check your connection.", error: true }]);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content: "I couldn't reach the server. Check your connection.",
+          error: true,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -274,7 +308,10 @@ export default function Home() {
     return (
       <div className="boot-screen">
         {BOOT_LINES.slice(0, visibleBootLines).map((line, i) => (
-          <div key={i} className={`boot-line${line.dim ? " dim" : ""}`}>
+          <div
+            key={i}
+            className={`boot-line${line.dim ? " dim" : ""}`}
+          >
             {line.text}
           </div>
         ))}
@@ -306,9 +343,16 @@ export default function Home() {
 
       <div className="log" ref={logRef}>
         {messages.map((m, i) => (
-          <div key={i} className={`msg-row ${m.role}`}>
-            <div className="msg-label">{m.role === "user" ? "YOU" : "JARVIS"}</div>
-            <div className={`bubble${m.error ? " error" : ""}`}>{m.content}</div>
+          <div
+            key={i}
+            className={`msg-row ${m.role}`}
+          >
+            <div className="msg-label">
+              {m.role === "user" ? "YOU" : "JARVIS"}
+            </div>
+            <div className={`bubble${m.error ? " error" : ""}`}>
+              {m.content}
+            </div>
           </div>
         ))}
         {loading && (
@@ -324,7 +368,11 @@ export default function Home() {
       </div>
 
       <div className="input-bar">
-        <button className={`icon-btn mic${listening ? " listening" : ""}`} onClick={toggleMic} title="Voice input">
+        <button
+          className={`icon-btn mic${listening ? " listening" : ""}`}
+          onClick={toggleMic}
+          title="Voice input"
+        >
           🎙
         </button>
         <input
@@ -334,7 +382,12 @@ export default function Home() {
           placeholder="Speak, and I shall listen..."
           disabled={loading}
         />
-        <button className="icon-btn send" onClick={sendMessage} disabled={loading || !input.trim()} title="Send">
+        <button
+          className="icon-btn send"
+          onClick={sendMessage}
+          disabled={loading || !input.trim()}
+          title="Send"
+        >
           ➤
         </button>
       </div>
