@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import * as THREE from "three";
 
 const BOOT_LINES = [
   { text: "INITIALIZING J.A.R.V.I.S. CORE...", dim: false },
@@ -9,137 +10,108 @@ const BOOT_LINES = [
   { text: "ALL SYSTEMS NOMINAL", dim: false },
 ];
 
-// Deterministic pseudo-random generator — same output every render, client and server,
-// so nothing shifts or mismatches after the page loads
-function rand(seed) {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-// Scattered dust particles floating around the sphere
-const PARTICLES = Array.from({ length: 50 }).map((_, i) => {
-  const angle = i * 137.508 * (Math.PI / 180);
-  const radius = 28 + rand(i * 12.9898) * 32;
-  const size = 0.3 + rand(i * 7.233) * 0.5;
-  const opacity = 0.2 + rand(i * 3.71) * 0.6;
-  return {
-    x: 50 + radius * Math.cos(angle),
-    y: 50 + radius * Math.sin(angle),
-    size,
-    opacity,
-    delay: (i % 10) * 0.3,
-  };
-});
-
-// A handful of long straight spikes for accent, kept few so they don't drown out the curved mesh
-const RAYS = Array.from({ length: 12 }).map((_, i) => {
-  const angle = rand(i * 91.7) * 360;
-  const length = 34 + rand(i * 4.51) * 26;
-  return { angle, length };
-});
-
-// Dense tangle of curved chords crossing through the sphere — cubic beziers with
-// two independent control points so they visibly loop and bend, not just barely bow
-function makeMesh(count, seedOffset) {
-  return Array.from({ length: count }).map((_, i) => {
-    const s = i + seedOffset;
-    const a1 = rand(s * 12.9898) * 360;
-    const spread = 60 + rand(s * 78.233) * 240;
-    const a2 = a1 + spread;
-    const r1 = 22 + rand(s * 45.164) * 24;
-    const r2 = 22 + rand(s * 91.345) * 24;
-    const x1 = 50 + r1 * Math.cos((a1 * Math.PI) / 180);
-    const y1 = 50 + r1 * Math.sin((a1 * Math.PI) / 180);
-    const x2 = 50 + r2 * Math.cos((a2 * Math.PI) / 180);
-    const y2 = 50 + r2 * Math.sin((a2 * Math.PI) / 180);
-
-    // Two independent control points, each free to land anywhere in a wide radius —
-    // this is what creates real loops and S-bends instead of near-straight lines
-    const c1Angle = rand(s * 17.91) * 360;
-    const c1Radius = 5 + rand(s * 61.3) * 42;
-    const c2Angle = rand(s * 29.44) * 360;
-    const c2Radius = 5 + rand(s * 8.77) * 42;
-    const c1x = 50 + c1Radius * Math.cos((c1Angle * Math.PI) / 180);
-    const c1y = 50 + c1Radius * Math.sin((c1Angle * Math.PI) / 180);
-    const c2x = 50 + c2Radius * Math.cos((c2Angle * Math.PI) / 180);
-    const c2y = 50 + c2Radius * Math.sin((c2Angle * Math.PI) / 180);
-
-    return {
-      d: `M${x1.toFixed(2)},${y1.toFixed(2)} C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${x2.toFixed(2)},${y2.toFixed(2)}`,
-      opacity: 0.4 + rand(s * 17.34) * 0.45,
-      width: 0.5 + rand(s * 3.14) * 0.5,
-    };
-  });
-}
-
-const MESH_A = makeMesh(38, 1);
-const MESH_B = makeMesh(38, 500);
-
 function Core({ thinking }) {
+  const mountRef = useRef(null);
+
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+    camera.position.z = 6;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    mount.appendChild(renderer.domElement);
+
+    const spriteCanvas = document.createElement("canvas");
+    spriteCanvas.width = 64;
+    spriteCanvas.height = 64;
+    const sctx = spriteCanvas.getContext("2d");
+    const grad = sctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, "rgba(255,255,255,1)");
+    grad.addColorStop(0.4, "rgba(200,230,255,0.8)");
+    grad.addColorStop(1, "rgba(160,210,255,0)");
+    sctx.fillStyle = grad;
+    sctx.fillRect(0, 0, 64, 64);
+    const spriteTexture = new THREE.CanvasTexture(spriteCanvas);
+
+    const PARTICLE_COUNT = 2500;
+    const positions = new Float32Array(PARTICLE_COUNT * 3);
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 2.2 * Math.pow(Math.random(), 1.6);
+      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      positions[i * 3 + 1] = r * Math.cos(phi);
+      positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+    const material = new THREE.PointsMaterial({
+      size: 0.14,
+      map: spriteTexture,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      color: new THREE.Color(0xbfe0ff),
+      sizeAttenuation: true,
+    });
+
+    const points = new THREE.Points(geometry, material);
+    scene.add(points);
+
+    const coreMaterial = new THREE.SpriteMaterial({
+      map: spriteTexture,
+      color: 0xffffff,
+      transparent: true,
+      opacity: 1,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const coreSprite = new THREE.Sprite(coreMaterial);
+    coreSprite.scale.set(2.2, 2.2, 1);
+    scene.add(coreSprite);
+
+    function resize() {
+      const size = Math.min(mount.clientWidth, mount.clientHeight) || 300;
+      renderer.setSize(size, size);
+      camera.aspect = 1;
+      camera.updateProjectionMatrix();
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    let rafId;
+    function animate() {
+      points.rotation.y += 0.0025;
+      points.rotation.x += 0.0008;
+      renderer.render(scene, camera);
+      rafId = requestAnimationFrame(animate);
+    }
+    animate();
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", resize);
+      geometry.dispose();
+      material.dispose();
+      spriteTexture.dispose();
+      coreMaterial.dispose();
+      renderer.dispose();
+      if (mount.contains(renderer.domElement)) {
+        mount.removeChild(renderer.domElement);
+      }
+    };
+  }, []);
+
   return (
     <div className={`core${thinking ? " thinking" : ""}`}>
-      <svg viewBox="0 0 100 100">
-        <defs>
-          <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="25%" stopColor="#fff4e0" />
-            <stop offset="50%" stopColor="var(--gold-bright)" />
-            <stop offset="80%" stopColor="var(--ember)" />
-            <stop offset="100%" stopColor="var(--ember)" stopOpacity="0" />
-          </radialGradient>
-          <filter id="softBlur" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1.2" />
-          </filter>
-        </defs>
-
-        <g className="particles">
-          {PARTICLES.map((p, i) => (
-            <circle
-              key={i}
-              cx={p.x}
-              cy={p.y}
-              r={p.size}
-              fill="var(--gold-bright)"
-              opacity={p.opacity}
-              style={{ animationDelay: `${p.delay}s` }}
-              className="particle"
-            />
-          ))}
-        </g>
-
-        <g className="mesh-a">
-          {MESH_A.map((m, i) => (
-            <path key={i} d={m.d} fill="none" stroke="var(--ember)" strokeWidth={m.width} opacity={m.opacity} strokeLinecap="round" />
-          ))}
-        </g>
-
-        <g className="mesh-b">
-          {MESH_B.map((m, i) => (
-            <path key={i} d={m.d} fill="none" stroke="var(--gold-bright)" strokeWidth={m.width} opacity={m.opacity} strokeLinecap="round" />
-          ))}
-        </g>
-
-        <g className="streaks">
-          {RAYS.map((r, i) => (
-            <line
-              key={i}
-              x1="50"
-              y1="50"
-              x2={50 + r.length * Math.cos((r.angle * Math.PI) / 180)}
-              y2={50 + r.length * Math.sin((r.angle * Math.PI) / 180)}
-              stroke="var(--gold-bright)"
-              strokeWidth="0.4"
-              opacity="0.55"
-              strokeLinecap="round"
-            />
-          ))}
-        </g>
-
-        <g className="core-glow">
-          <circle cx="50" cy="50" r="18" fill="url(#coreGlow)" />
-          <circle cx="50" cy="50" r="4" fill="#ffffff" filter="url(#softBlur)" />
-        </g>
-      </svg>
+      <div ref={mountRef} className="core-canvas-wrap" />
     </div>
   );
 }
@@ -157,7 +129,6 @@ export default function Home() {
   const logRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // Boot sequence
   useEffect(() => {
     if (visibleBootLines < BOOT_LINES.length) {
       const t = setTimeout(() => setVisibleBootLines((n) => n + 1), 380);
@@ -167,12 +138,10 @@ export default function Home() {
     return () => clearTimeout(t);
   }, [visibleBootLines]);
 
-  // Auto-scroll chat log
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
-  // Set up speech recognition if the browser supports it
   useEffect(() => {
     const SpeechRecognition = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
     if (!SpeechRecognition) return;
@@ -229,7 +198,7 @@ export default function Home() {
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         alert("Voice playback failed: " + (data?.error || `HTTP ${res.status}`));
-        return; // text reply is already shown either way
+        return;
       }
       const audioBlob = await res.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
