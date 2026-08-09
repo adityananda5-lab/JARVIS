@@ -2,433 +2,377 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/* =========================================================
-   J.A.R.V.I.S. — MAIN INTERFACE
-   ========================================================= */
+/*
+  J.A.R.V.I.S. ENERGY CORE
 
-const BOOT_LINES = [
-  { text: "INITIALIZING J.A.R.V.I.S. CORE...", dim: false },
-  { text: "loading cognitive subsystem", dim: true },
-  { text: "calibrating neural interface", dim: true },
-  { text: "ALL SYSTEMS NOMINAL", dim: false },
-];
+  IMPORTANT:
+  This intentionally does NOT use Three.js.
 
-/* =========================================================
-   SEEDED RANDOM
-   Keeps the visual structure stable instead of changing
-   completely every frame.
-   ========================================================= */
+  The reference visual is not a planet, solar system,
+  particle sphere, or orbit visualization.
 
-function seededRandom(seed) {
-  const x = Math.sin(seed * 12.9898) * 43758.5453;
-  return x - Math.floor(x);
-}
+  It is a chaotic electromagnetic/plasma field made
+  from branching irregular filaments surrounding a
+  small white-hot energy core.
+*/
 
-/* =========================================================
-   ENERGY FIELD CANVAS
-   ========================================================= */
-
-function JarvisCore({ thinking }) {
+function EnergyCore({ thinking }) {
   const canvasRef = useRef(null);
-  const animationRef = useRef(null);
-  const stateRef = useRef({
-    width: 0,
-    height: 0,
-    dpr: 1,
-    time: 0,
-    filaments: [],
-    particles: [],
-  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", {
+      alpha: true,
+    });
+
     if (!ctx) return;
 
-    const state = stateRef.current;
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let animationFrame = 0;
 
-    /* -------------------------------------------------------
-       RESIZE
-       ------------------------------------------------------- */
+    const TWO_PI = Math.PI * 2;
+
+    let filaments = [];
+    let sparks = [];
+
+    /*
+      A deterministic random generator gives us a stable
+      structure instead of rebuilding the entire core every frame.
+    */
+    let seed = Math.random() * 100000;
+
+    function random() {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    }
+
+    function rand(min, max) {
+      return min + random() * (max - min);
+    }
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
 
-      state.dpr = Math.min(window.devicePixelRatio || 1, 2);
-      state.width = rect.width;
-      state.height = rect.height;
+      width = Math.max(1, rect.width);
+      height = Math.max(1, rect.height);
 
-      canvas.width = Math.floor(rect.width * state.dpr);
-      canvas.height = Math.floor(rect.height * state.dpr);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-      ctx.setTransform(
-        state.dpr,
-        0,
-        0,
-        state.dpr,
-        0,
-        0
-      );
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
 
-      createField();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      buildField();
     }
 
-    /* -------------------------------------------------------
-       CREATE IRREGULAR ENERGY NETWORK
-       ------------------------------------------------------- */
+    /*
+      Creates ONE irregular electrical filament.
 
-    function createField() {
-      state.filaments = [];
-      state.particles = [];
+      Unlike a radial ray, every filament changes direction
+      repeatedly and can branch.
+    */
+    function createFilament(angle, length, startRadius, depth = 0) {
+      const points = [];
 
-      /*
-        IMPORTANT:
+      let x = 0;
+      let y = 0;
 
-        This deliberately does NOT create:
-        - circles
-        - ellipses
-        - radial spokes
-        - orbital rings
+      let currentAngle = angle;
 
-        Instead, every filament is an irregular wandering
-        polyline. The result is a tangled energy cloud.
-      */
+      const steps = Math.max(10, Math.floor(length / 4));
 
-      const minDimension = Math.min(
-        state.width,
-        state.height
-      );
+      let radius = startRadius;
 
-      const fieldRadius = minDimension * 0.27;
-
-      /* Main tangled filaments */
-
-      const filamentCount =
-        state.width < 600 ? 135 : 210;
-
-      for (let i = 0; i < filamentCount; i++) {
-        const seed = i * 17.371;
-
-        const startAngle =
-          seededRandom(seed) * Math.PI * 2;
-
-        const startRadius =
-          fieldRadius *
-          (0.15 + seededRandom(seed + 1) * 0.72);
-
-        let x =
-          Math.cos(startAngle) * startRadius;
-
-        let y =
-          Math.sin(startAngle) * startRadius;
-
-        const points = [];
+      for (let i = 0; i < steps; i++) {
+        /*
+          Strong angular instability creates the tangled,
+          broken-electrical appearance from the reference.
+        */
+        currentAngle += rand(-0.34, 0.34);
 
         /*
-          Each filament performs a random walk.
-
-          This is what prevents the "sun ray" appearance.
+          Occasional dramatic direction change.
         */
-
-        const steps =
-          18 + Math.floor(seededRandom(seed + 2) * 35);
-
-        let angle =
-          startAngle +
-          (seededRandom(seed + 3) - 0.5) * 2.4;
-
-        let radius = Math.sqrt(x * x + y * y);
-
-        for (let s = 0; s < steps; s++) {
-          const t = s / steps;
-
-          const noiseA =
-            Math.sin(
-              seed * 0.37 +
-                s * 0.91 +
-                Math.sin(s * 0.31)
-            );
-
-          const noiseB =
-            Math.cos(
-              seed * 0.21 +
-                s * 1.17
-            );
-
-          /*
-            The path bends constantly instead of traveling
-            in a straight line.
-          */
-
-          angle +=
-            noiseA * 0.28 +
-            noiseB * 0.13 +
-            (seededRandom(seed + s * 5.1) - 0.5) *
-              0.35;
-
-          /*
-            Slight inward/outward movement creates the
-            messy 3D-energy-cloud feeling.
-          */
-
-          radius +=
-            Math.sin(
-              seed * 0.7 +
-                s * 0.52
-            ) *
-              fieldRadius *
-              0.035;
-
-          radius +=
-            (seededRandom(seed + s * 8.2) - 0.5) *
-            fieldRadius *
-            0.035;
-
-          radius = Math.max(
-            fieldRadius * 0.025,
-            Math.min(fieldRadius * 1.18, radius)
-          );
-
-          x =
-            Math.cos(angle) * radius;
-
-          y =
-            Math.sin(angle) * radius;
-
-          /*
-            Add local distortion so the field doesn't
-            become a perfect radial structure.
-          */
-
-          const distortion =
-            Math.sin(
-              s * 1.9 +
-                seed
-            ) *
-            fieldRadius *
-            0.035;
-
-          x +=
-            Math.cos(angle + Math.PI / 2) *
-            distortion;
-
-          y +=
-            Math.sin(angle + Math.PI / 2) *
-            distortion;
-
-          points.push({
-            x,
-            y,
-          });
+        if (random() < 0.07) {
+          currentAngle += rand(-0.8, 0.8);
         }
 
-        state.filaments.push({
-          points,
-          seed,
-          width:
-            0.45 +
-            seededRandom(seed + 20) * 1.15,
-          alpha:
-            0.18 +
-            seededRandom(seed + 30) * 0.62,
-          phase:
-            seededRandom(seed + 40) *
-            Math.PI *
-            2,
+        radius += rand(1.2, 4.2);
+
+        const jitterX = rand(-3.5, 3.5);
+        const jitterY = rand(-3.5, 3.5);
+
+        x = Math.cos(currentAngle) * radius + jitterX;
+        y = Math.sin(currentAngle) * radius + jitterY;
+
+        points.push({
+          x,
+          y,
+          brightness: rand(0.45, 1),
         });
-      }
 
-      /* -----------------------------------------------------
-         SHORTER SECONDARY FILAMENTS
+        /*
+          Random branches.
+        */
+        if (
+          depth < 2 &&
+          i > 5 &&
+          i < steps - 8 &&
+          random() < 0.055
+        ) {
+          const branchAngle =
+            currentAngle + rand(-1.15, 1.15);
 
-         These create the dense tangled structure around
-         the main network.
-         ----------------------------------------------------- */
+          const branchLength = length * rand(0.22, 0.48);
 
-      const secondaryCount =
-        state.width < 600 ? 170 : 280;
-
-      for (let i = 0; i < secondaryCount; i++) {
-        const seed = 5000 + i * 31.77;
-
-        const points = [];
-
-        let angle =
-          seededRandom(seed) *
-          Math.PI *
-          2;
-
-        let radius =
-          fieldRadius *
-          (0.2 +
-            seededRandom(seed + 1) *
-              0.9);
-
-        const steps =
-          7 +
-          Math.floor(
-            seededRandom(seed + 2) * 18
-          );
-
-        for (let s = 0; s < steps; s++) {
-          angle +=
-            (seededRandom(seed + s * 2.1) - 0.5) *
-            0.85;
-
-          radius +=
-            (seededRandom(seed + s * 4.3) - 0.5) *
-            fieldRadius *
-            0.08;
-
-          radius = Math.max(
-            fieldRadius * 0.04,
-            Math.min(
-              fieldRadius * 1.3,
-              radius
+          filaments.push(
+            createFilament(
+              branchAngle,
+              branchLength,
+              radius,
+              depth + 1
             )
           );
-
-          const x =
-            Math.cos(angle) * radius;
-
-          const y =
-            Math.sin(angle) * radius;
-
-          points.push({
-            x,
-            y,
-          });
         }
 
-        state.filaments.push({
-          points,
-          seed,
-          width:
-            0.25 +
-            seededRandom(seed + 50) * 0.75,
-          alpha:
-            0.08 +
-            seededRandom(seed + 60) * 0.38,
-          phase:
-            seededRandom(seed + 70) *
-            Math.PI *
-            2,
-        });
+        /*
+          Branching filament may occasionally terminate early.
+        */
+        if (i > steps * 0.55 && random() < 0.025) {
+          break;
+        }
       }
 
-      /* -----------------------------------------------------
-         PARTICLES
-         ----------------------------------------------------- */
+      return {
+        points,
+        width: rand(0.35, 1.25) * (depth === 0 ? 1 : 0.65),
+        alpha: rand(0.3, 0.9),
+        phase: rand(0, TWO_PI),
+        speed: rand(0.003, 0.012),
+        depth,
+      };
+    }
 
-      const particleCount =
-        state.width < 600 ? 190 : 340;
+    function buildField() {
+      filaments = [];
+      sparks = [];
 
-      for (let i = 0; i < particleCount; i++) {
-        const seed = 9000 + i * 11.93;
+      /*
+        Reference composition:
+        - dense center
+        - chaotic surrounding field
+        - irregular outer edge
+        - no perfect circle
+      */
 
+      const baseCount = width < 600 ? 115 : 180;
+
+      for (let i = 0; i < baseCount; i++) {
+        /*
+          Deliberately NON-uniform angle distribution.
+        */
         const angle =
-          seededRandom(seed) *
-          Math.PI *
-          2;
+          (i / baseCount) * TWO_PI +
+          rand(-0.18, 0.18);
 
-        const radius =
-          fieldRadius *
-          Math.pow(
-            seededRandom(seed + 1),
-            0.72
-          ) *
-          1.18;
+        /*
+          Different lengths prevent the "sun ray" appearance.
+        */
+        const length = rand(
+          Math.min(width, height) * 0.18,
+          Math.min(width, height) * 0.42
+        );
 
-        state.particles.push({
-          x:
-            Math.cos(angle) * radius,
-          y:
-            Math.sin(angle) * radius,
+        /*
+          Some filaments begin closer to the center,
+          some deeper inside the plasma.
+        */
+        const startRadius = rand(5, 25);
 
-          size:
-            0.35 +
-            seededRandom(seed + 2) *
-              1.65,
+        filaments.push(
+          createFilament(
+            angle,
+            length,
+            startRadius,
+            0
+          )
+        );
+      }
 
-          alpha:
-            0.15 +
-            seededRandom(seed + 3) *
-              0.75,
+      /*
+        Tiny floating energy particles.
+        These are sparse — NOT a particle sphere.
+      */
+      const sparkCount = width < 600 ? 100 : 170;
 
-          phase:
-            seededRandom(seed + 4) *
-            Math.PI *
-            2,
+      for (let i = 0; i < sparkCount; i++) {
+        const angle = random() * TWO_PI;
 
-          speed:
-            0.3 +
-            seededRandom(seed + 5) *
-              1.2,
+        const radius = Math.pow(random(), 0.65) *
+          Math.min(width, height) *
+          0.34;
+
+        sparks.push({
+          x: Math.cos(angle) * radius,
+          y: Math.sin(angle) * radius,
+          radius: rand(0.35, 1.5),
+          alpha: rand(0.2, 0.8),
+          phase: rand(0, TWO_PI),
+          speed: rand(0.01, 0.04),
         });
       }
     }
 
-    /* -------------------------------------------------------
-       DRAW FILAMENT
-       ------------------------------------------------------- */
+    function drawGlow(cx, cy, pulse) {
+      /*
+        Very small central glow.
+        Keeping this restrained prevents the "giant sun" effect.
+      */
 
-    function drawFilament(filament, time, intensity) {
-      const cx = state.width / 2;
-      const cy = state.height / 2;
+      const inner = 7 + pulse * 3;
+      const outer = 70 + pulse * 25;
 
+      const gradient = ctx.createRadialGradient(
+        cx,
+        cy,
+        0,
+        cx,
+        cy,
+        outer
+      );
+
+      gradient.addColorStop(
+        0,
+        "rgba(255,255,245,1)"
+      );
+
+      gradient.addColorStop(
+        0.04,
+        "rgba(255,248,210,1)"
+      );
+
+      gradient.addColorStop(
+        0.12,
+        "rgba(255,190,70,0.95)"
+      );
+
+      gradient.addColorStop(
+        0.35,
+        "rgba(255,105,20,0.35)"
+      );
+
+      gradient.addColorStop(
+        1,
+        "rgba(255,70,10,0)"
+      );
+
+      ctx.fillStyle = gradient;
+
+      ctx.beginPath();
+      ctx.arc(
+        cx,
+        cy,
+        outer,
+        0,
+        TWO_PI
+      );
+
+      ctx.fill();
+
+      /*
+        White-hot center.
+      */
+      const coreGradient = ctx.createRadialGradient(
+        cx,
+        cy,
+        0,
+        cx,
+        cy,
+        inner
+      );
+
+      coreGradient.addColorStop(
+        0,
+        "rgba(255,255,255,1)"
+      );
+
+      coreGradient.addColorStop(
+        0.35,
+        "rgba(255,255,230,1)"
+      );
+
+      coreGradient.addColorStop(
+        0.7,
+        "rgba(255,205,100,1)"
+      );
+
+      coreGradient.addColorStop(
+        1,
+        "rgba(255,110,20,0)"
+      );
+
+      ctx.fillStyle = coreGradient;
+
+      ctx.beginPath();
+      ctx.arc(
+        cx,
+        cy,
+        inner,
+        0,
+        TWO_PI
+      );
+
+      ctx.fill();
+    }
+
+    function drawFilament(filament, time, cx, cy) {
       const points = filament.points;
 
-      if (!points.length) return;
+      if (!points || points.length < 2) return;
+
+      /*
+        Filaments subtly vibrate.
+        This is what makes the structure feel alive.
+      */
+
+      const flicker =
+        0.72 +
+        Math.sin(
+          time * filament.speed * 1000 +
+          filament.phase
+        ) *
+          0.28;
+
+      const alpha =
+        filament.alpha *
+        flicker;
 
       ctx.beginPath();
 
       for (let i = 0; i < points.length; i++) {
         const p = points[i];
 
-        /*
-          Small animated distortion.
-        */
-
-        const wave =
+        const localWave =
           Math.sin(
-            time * 0.0012 +
-              filament.phase +
-              i * 0.43
-          ) *
-          intensity *
-          2.5;
-
-        const nx =
-          -p.y /
-          Math.max(
-            Math.sqrt(
-              p.x * p.x +
-                p.y * p.y
-            ),
-            1
-          );
-
-        const ny =
-          p.x /
-          Math.max(
-            Math.sqrt(
-              p.x * p.x +
-                p.y * p.y
-            ),
-            1
-          );
+            time * 0.0025 +
+            i * 0.85 +
+            filament.phase
+          ) * 1.6;
 
         const x =
           cx +
           p.x +
-          nx * wave;
+          Math.cos(i * 1.7) * localWave;
 
         const y =
           cy +
           p.y +
-          ny * wave;
+          Math.sin(i * 1.3) * localWave;
 
         if (i === 0) {
           ctx.moveTo(x, y);
@@ -437,319 +381,174 @@ function JarvisCore({ thinking }) {
         }
       }
 
+      /*
+        Outer filaments are darker and thinner.
+        Inner filaments are brighter.
+      */
       const glow =
-        filament.alpha *
-        (0.55 + intensity * 0.7);
+        filament.depth === 0
+          ? "rgba(255,115,25,"
+          : "rgba(255,165,75,";
 
       ctx.strokeStyle =
-        `rgba(255, ${130 + Math.floor(intensity * 40)}, 35, ${glow})`;
+        glow + Math.min(alpha, 0.9) + ")";
 
-      ctx.lineWidth =
-        filament.width *
-        (1 + intensity * 0.45);
-
-      ctx.shadowColor =
-        "rgba(255, 105, 20, 0.8)";
+      ctx.lineWidth = filament.width;
 
       ctx.shadowBlur =
-        filament.width > 0.8
-          ? 4 + intensity * 6
-          : 2;
+        filament.depth === 0 ? 5 : 2;
+
+      ctx.shadowColor =
+        "rgba(255,100,20,0.7)";
 
       ctx.stroke();
 
       ctx.shadowBlur = 0;
     }
 
-    /* -------------------------------------------------------
-       DRAW
-       ------------------------------------------------------- */
+    function drawSparks(time, cx, cy) {
+      for (const spark of sparks) {
+        const alpha =
+          spark.alpha *
+          (0.55 +
+            Math.sin(
+              time * spark.speed +
+                spark.phase
+            ) *
+              0.45);
 
-    function draw(time) {
-      state.time = time;
-
-      const intensity = thinking ? 1 : 0.25;
-
-      /*
-        Completely clear the canvas.
-
-        No background circle is drawn.
-        This is important.
-      */
-
-      ctx.clearRect(
-        0,
-        0,
-        state.width,
-        state.height
-      );
-
-      const cx = state.width / 2;
-      const cy = state.height / 2;
-
-      const minDimension = Math.min(
-        state.width,
-        state.height
-      );
-
-      const radius =
-        minDimension * 0.27;
-
-      /* -----------------------------------------------------
-         VERY SUBTLE AMBIENT GLOW
-
-         Not a giant orange sphere.
-         Just atmospheric illumination.
-         ----------------------------------------------------- */
-
-      const ambient =
-        ctx.createRadialGradient(
-          cx,
-          cy,
-          0,
-          cx,
-          cy,
-          radius * 1.25
-        );
-
-      ambient.addColorStop(
-        0,
-        `rgba(255, 100, 15, ${
-          0.08 + intensity * 0.08
-        })`
-      );
-
-      ambient.addColorStop(
-        0.25,
-        `rgba(255, 80, 10, ${
-          0.035 + intensity * 0.04
-        })`
-      );
-
-      ambient.addColorStop(
-        1,
-        "rgba(255, 60, 0, 0)"
-      );
-
-      ctx.fillStyle = ambient;
-
-      ctx.fillRect(
-        cx - radius * 1.4,
-        cy - radius * 1.4,
-        radius * 2.8,
-        radius * 2.8
-      );
-
-      /* -----------------------------------------------------
-         FILAMENT NETWORK
-         ----------------------------------------------------- */
-
-      for (const filament of state.filaments) {
-        drawFilament(
-          filament,
-          time,
-          intensity
-        );
-      }
-
-      /* -----------------------------------------------------
-         PARTICLES
-         ----------------------------------------------------- */
-
-      for (const particle of state.particles) {
-        const pulse =
-          0.55 +
-          Math.sin(
-            time *
-              0.001 *
-              particle.speed +
-              particle.phase
-          ) *
-            0.45;
-
-        const drift =
-          Math.sin(
-            time * 0.00025 +
-              particle.phase
-          ) *
-          intensity *
-          4;
-
-        const x =
-          cx +
-          particle.x +
-          drift;
-
-        const y =
-          cy +
-          particle.y;
+        ctx.fillStyle =
+          `rgba(255,190,105,${Math.max(
+            0,
+            alpha
+          )})`;
 
         ctx.beginPath();
 
         ctx.arc(
-          x,
-          y,
-          particle.size *
-            (0.7 + pulse * 0.5),
+          cx + spark.x,
+          cy + spark.y,
+          spark.radius,
           0,
-          Math.PI * 2
+          TWO_PI
         );
-
-        ctx.fillStyle =
-          `rgba(255, ${
-            155 +
-            Math.floor(pulse * 75)
-          }, ${
-            65 +
-            Math.floor(pulse * 35)
-          }, ${
-            particle.alpha *
-            (0.65 + pulse * 0.35)
-          })`;
-
-        ctx.shadowColor =
-          "rgba(255, 120, 30, 0.9)";
-
-        ctx.shadowBlur =
-          particle.size > 1
-            ? 5
-            : 2;
 
         ctx.fill();
+      }
+    }
 
-        ctx.shadowBlur = 0;
+    function draw(time) {
+      ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+      );
+
+      const cx = width / 2;
+      const cy = height / 2;
+
+      /*
+        Processing mode increases activity,
+        but does NOT simply make the object huge.
+      */
+      const activity = thinking ? 1.45 : 1;
+
+      /*
+        Slight breathing pulse.
+        Very subtle.
+      */
+      const pulse =
+        (Math.sin(time * 0.0022 * activity) + 1) /
+        2;
+
+      /*
+        Draw a faint ambient plasma haze.
+      */
+      const hazeRadius =
+        Math.min(width, height) *
+        0.25;
+
+      const haze =
+        ctx.createRadialGradient(
+          cx,
+          cy,
+          0,
+          cx,
+          cy,
+          hazeRadius
+        );
+
+      haze.addColorStop(
+        0,
+        `rgba(255,85,10,${0.10 +
+          pulse * 0.05})`
+      );
+
+      haze.addColorStop(
+        0.45,
+        "rgba(255,55,5,0.035)"
+      );
+
+      haze.addColorStop(
+        1,
+        "rgba(255,30,0,0)"
+      );
+
+      ctx.fillStyle = haze;
+
+      ctx.beginPath();
+      ctx.arc(
+        cx,
+        cy,
+        hazeRadius,
+        0,
+        TWO_PI
+      );
+
+      ctx.fill();
+
+      /*
+        Back filaments first.
+      */
+      for (const filament of filaments) {
+        if (filament.depth > 0) {
+          drawFilament(
+            filament,
+            time * activity,
+            cx,
+            cy
+          );
+        }
       }
 
-      /* -----------------------------------------------------
-         CENTRAL ENERGY CORE
+      /*
+        Main filaments.
+      */
+      for (const filament of filaments) {
+        if (filament.depth === 0) {
+          drawFilament(
+            filament,
+            time * activity,
+            cx,
+            cy
+          );
+        }
+      }
 
-         SMALL.
-
-         This is deliberately NOT a giant sun.
-         ----------------------------------------------------- */
-
-      const corePulse =
-        1 +
-        Math.sin(
-          time *
-            (thinking ? 0.008 : 0.003)
-        ) *
-          (thinking ? 0.16 : 0.08);
-
-      const coreRadius =
-        Math.max(
-          7,
-          minDimension *
-            0.018 *
-            corePulse
-        );
-
-      /* outer glow */
-
-      const coreGlow =
-        ctx.createRadialGradient(
-          cx,
-          cy,
-          0,
-          cx,
-          cy,
-          coreRadius * 5
-        );
-
-      coreGlow.addColorStop(
-        0,
-        "rgba(255,255,230,0.95)"
+      drawSparks(
+        time * activity,
+        cx,
+        cy
       );
 
-      coreGlow.addColorStop(
-        0.12,
-        "rgba(255,220,120,0.9)"
-      );
-
-      coreGlow.addColorStop(
-        0.3,
-        "rgba(255,125,25,0.55)"
-      );
-
-      coreGlow.addColorStop(
-        0.65,
-        "rgba(255,75,10,0.12)"
-      );
-
-      coreGlow.addColorStop(
-        1,
-        "rgba(255,50,0,0)"
-      );
-
-      ctx.fillStyle = coreGlow;
-
-      ctx.beginPath();
-
-      ctx.arc(
+      drawGlow(
         cx,
         cy,
-        coreRadius * 5,
-        0,
-        Math.PI * 2
+        pulse * activity
       );
 
-      ctx.fill();
-
-      /* actual core */
-
-      const core =
-        ctx.createRadialGradient(
-          cx - coreRadius * 0.25,
-          cy - coreRadius * 0.25,
-          0,
-          cx,
-          cy,
-          coreRadius
-        );
-
-      core.addColorStop(
-        0,
-        "#ffffff"
-      );
-
-      core.addColorStop(
-        0.4,
-        "#fff4c9"
-      );
-
-      core.addColorStop(
-        0.75,
-        "#ffbd4a"
-      );
-
-      core.addColorStop(
-        1,
-        "#ff5b12"
-      );
-
-      ctx.fillStyle = core;
-
-      ctx.shadowColor =
-        "rgba(255, 110, 20, 1)";
-
-      ctx.shadowBlur =
-        thinking ? 28 : 18;
-
-      ctx.beginPath();
-
-      ctx.arc(
-        cx,
-        cy,
-        coreRadius,
-        0,
-        Math.PI * 2
-      );
-
-      ctx.fill();
-
-      ctx.shadowBlur = 0;
-
-      animationRef.current =
+      animationFrame =
         requestAnimationFrame(draw);
     }
 
@@ -760,43 +559,66 @@ function JarvisCore({ thinking }) {
       resize
     );
 
-    animationRef.current =
+    animationFrame =
       requestAnimationFrame(draw);
 
     return () => {
+      cancelAnimationFrame(
+        animationFrame
+      );
+
       window.removeEventListener(
         "resize",
         resize
       );
-
-      if (animationRef.current) {
-        cancelAnimationFrame(
-          animationRef.current
-        );
-      }
     };
   }, [thinking]);
 
   return (
-    <div className="jarvis-core">
+    <div
+      className={`energy-core ${
+        thinking ? "energy-thinking" : ""
+      }`}
+    >
       <canvas
         ref={canvasRef}
-        aria-hidden="true"
+        className="energy-canvas"
       />
     </div>
   );
 }
 
-/* =========================================================
-   MAIN APP
-   ========================================================= */
+/* --------------------------------------------------
+   BOOT
+-------------------------------------------------- */
+
+const BOOT_LINES = [
+  {
+    text: "INITIALIZING J.A.R.V.I.S. CORE...",
+    dim: false,
+  },
+  {
+    text: "loading language subsystem",
+    dim: true,
+  },
+  {
+    text: "calibrating voice interface",
+    dim: true,
+  },
+  {
+    text: "ALL SYSTEMS NOMINAL",
+    dim: false,
+  },
+];
 
 export default function Home() {
   const [booted, setBooted] =
     useState(false);
 
-  const [visibleBootLines, setVisibleBootLines] =
-    useState(0);
+  const [
+    visibleBootLines,
+    setVisibleBootLines,
+  ] = useState(0);
 
   const [messages, setMessages] =
     useState([
@@ -825,10 +647,9 @@ export default function Home() {
   const recognitionRef =
     useRef(null);
 
-  /* =======================================================
-     BOOT
-     ======================================================= */
-
+  /*
+    Boot sequence
+  */
   useEffect(() => {
     if (
       visibleBootLines <
@@ -837,9 +658,9 @@ export default function Home() {
       const timer =
         setTimeout(() => {
           setVisibleBootLines(
-            (value) => value + 1
+            (n) => n + 1
           );
-        }, 300);
+        }, 380);
 
       return () =>
         clearTimeout(timer);
@@ -854,10 +675,9 @@ export default function Home() {
       clearTimeout(timer);
   }, [visibleBootLines]);
 
-  /* =======================================================
-     AUTO SCROLL
-     ======================================================= */
-
+  /*
+    Keep chat scrolled to newest message.
+  */
   useEffect(() => {
     if (!logRef.current) return;
 
@@ -868,25 +688,19 @@ export default function Home() {
     });
   }, [messages, loading]);
 
-  /* =======================================================
-     SPEECH RECOGNITION
-     ======================================================= */
-
+  /*
+    Speech recognition.
+  */
   useEffect(() => {
-    if (
-      typeof window ===
-      "undefined"
-    ) {
+    if (typeof window === "undefined")
       return;
-    }
 
     const SpeechRecognition =
       window.SpeechRecognition ||
       window.webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
+    if (!SpeechRecognition)
       return;
-    }
 
     const recognition =
       new SpeechRecognition();
@@ -913,15 +727,7 @@ export default function Home() {
           "service-not-allowed"
       ) {
         alert(
-          "Microphone access was blocked. Allow microphone access for this website."
-        );
-      } else if (
-        event.error !==
-        "no-speech"
-      ) {
-        alert(
-          "Voice input error: " +
-            event.error
+          "Microphone access was blocked. Allow microphone access for this website and try again."
         );
       }
     };
@@ -940,16 +746,13 @@ export default function Home() {
     };
   }, []);
 
-  /* =======================================================
-     MICROPHONE
-     ======================================================= */
-
   function toggleMic() {
-    if (
-      !recognitionRef.current
-    ) {
+    const recognition =
+      recognitionRef.current;
+
+    if (!recognition) {
       alert(
-        "Voice input is not supported by this browser. Try Chrome or Edge."
+        "Voice input is not supported in this browser. Try Chrome or Edge."
       );
 
       return;
@@ -957,26 +760,24 @@ export default function Home() {
 
     if (listening) {
       try {
-        recognitionRef.current.stop();
+        recognition.stop();
       } catch {}
 
       setListening(false);
-
       return;
     }
 
     try {
-      recognitionRef.current.start();
+      recognition.start();
       setListening(true);
     } catch {
       setListening(false);
     }
   }
 
-  /* =======================================================
-     TEXT TO SPEECH
-     ======================================================= */
-
+  /*
+    Text-to-speech API.
+  */
   async function speak(text) {
     if (!voiceOn) return;
 
@@ -1008,11 +809,13 @@ export default function Home() {
         return;
       }
 
-      const blob =
+      const audioBlob =
         await response.blob();
 
       const audioUrl =
-        URL.createObjectURL(blob);
+        URL.createObjectURL(
+          audioBlob
+        );
 
       const audio =
         new Audio(audioUrl);
@@ -1032,20 +835,15 @@ export default function Home() {
     }
   }
 
-  /* =======================================================
-     SEND MESSAGE
-     ======================================================= */
-
+  /*
+    Send message to your existing API.
+  */
   async function sendMessage() {
     const text =
       input.trim();
 
-    if (
-      !text ||
-      loading
-    ) {
+    if (!text || loading)
       return;
-    }
 
     const nextMessages = [
       ...messages,
@@ -1061,24 +859,22 @@ export default function Home() {
 
     try {
       const response =
-        await fetch(
-          "/api/chat",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              messages:
-                nextMessages,
-            }),
-          }
-        );
+        await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            messages:
+              nextMessages,
+          }),
+        });
 
       const data =
         await response
-          .json();
+          .json()
+          .catch(() => null);
 
       if (!response.ok) {
         setMessages((current) => [
@@ -1097,7 +893,7 @@ export default function Home() {
 
       const reply =
         data?.reply ||
-        "I received your request.";
+        "I received your request, but no response was returned.";
 
       setMessages((current) => [
         ...current,
@@ -1114,7 +910,7 @@ export default function Home() {
         {
           role: "assistant",
           content:
-            "I couldn't reach the server. Check your connection.",
+            "I couldn't reach the server. Check your connection and try again.",
           error: true,
         },
       ]);
@@ -1123,10 +919,22 @@ export default function Home() {
     }
   }
 
-  /* =======================================================
-     BOOT SCREEN
-     ======================================================= */
+  /*
+    Enter = send
+  */
+  function handleKeyDown(event) {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+      sendMessage();
+    }
+  }
 
+  /*
+    Boot screen
+  */
   if (!booted) {
     return (
       <div className="boot-screen">
@@ -1136,12 +944,11 @@ export default function Home() {
         ).map((line, index) => (
           <div
             key={index}
-            className={
-              "boot-line" +
-              (line.dim
-                ? " dim"
-                : "")
-            }
+            className={`boot-line ${
+              line.dim
+                ? "dim"
+                : ""
+            }`}
           >
             {line.text}
           </div>
@@ -1150,15 +957,9 @@ export default function Home() {
     );
   }
 
-  /* =======================================================
-     UI
-     ======================================================= */
-
   return (
     <main className="app">
-      {/* ================================================
-          HEADER
-          ================================================ */}
+      {/* HEADER */}
 
       <header className="header">
         <div className="title-block">
@@ -1167,14 +968,7 @@ export default function Home() {
           </div>
 
           <div className="status-line">
-            <span
-              className={
-                "status-dot" +
-                (loading
-                  ? " processing"
-                  : "")
-              }
-            />
+            <span className="status-dot" />
 
             {loading
               ? "PROCESSING"
@@ -1183,17 +977,14 @@ export default function Home() {
         </div>
 
         <button
-          type="button"
-          className={
-            "voice-toggle" +
-            (voiceOn
-              ? " active"
-              : "")
-          }
+          className={`voice-toggle ${
+            voiceOn
+              ? "active"
+              : ""
+          }`}
           onClick={() =>
             setVoiceOn(
-              (value) =>
-                !value
+              (value) => !value
             )
           }
         >
@@ -1204,32 +995,44 @@ export default function Home() {
         </button>
       </header>
 
-      {/* ================================================
-          ENERGY FIELD
-          ================================================ */}
+      {/* INITIAL JARVIS MESSAGE */}
+
+      <section
+        className="welcome-message"
+        aria-live="polite"
+      >
+        <div className="message-label">
+          JARVIS
+        </div>
+
+        <div className="welcome-text">
+          Good to see you. Systems are
+          online — how can I help?
+        </div>
+      </section>
+
+      {/* ENERGY CORE */}
 
       <div className="core-stage">
-        <JarvisCore
+        <EnergyCore
           thinking={loading}
         />
       </div>
 
-      {/* ================================================
-          CHAT
-          ================================================ */}
+      {/* CHAT HISTORY */}
 
       <section
         className="log"
         ref={logRef}
       >
-        {messages.map(
-          (message, index) => (
+        {messages
+          .slice(1)
+          .map((message, index) => (
             <div
               key={index}
-              className={
-                "msg-row " +
+              className={`msg-row ${
                 message.role
-              }
+              }`}
             >
               <div className="msg-label">
                 {message.role ===
@@ -1239,18 +1042,18 @@ export default function Home() {
               </div>
 
               <div
-                className={
-                  "bubble" +
-                  (message.error
-                    ? " error"
-                    : "")
-                }
+                className={`bubble ${
+                  message.error
+                    ? "error"
+                    : ""
+                }`}
               >
-                {message.content}
+                {
+                  message.content
+                }
               </div>
             </div>
-          )
-        )}
+          ))}
 
         {loading && (
           <div className="msg-row assistant">
@@ -1267,50 +1070,40 @@ export default function Home() {
         )}
       </section>
 
-      {/* ================================================
-          INPUT
-          ================================================ */}
+      {/* INPUT */}
 
       <footer className="input-bar">
         <button
-          type="button"
-          className={
-            "icon-btn mic" +
-            (listening
-              ? " listening"
-              : "")
-          }
+          className={`icon-btn mic ${
+            listening
+              ? "listening"
+              : ""
+          }`}
           onClick={toggleMic}
           title="Voice input"
           aria-label="Voice input"
         >
-          🎙
+          <span className="mic-icon">
+            🎙
+          </span>
         </button>
 
         <input
-          type="text"
           value={input}
           onChange={(event) =>
             setInput(
               event.target.value
             )
           }
-          onKeyDown={(event) => {
-            if (
-              event.key ===
-              "Enter"
-            ) {
-              event.preventDefault();
-              sendMessage();
-            }
-          }}
+          onKeyDown={
+            handleKeyDown
+          }
           placeholder="Speak, and I shall listen..."
           disabled={loading}
           autoComplete="off"
         />
 
         <button
-          type="button"
           className="icon-btn send"
           onClick={sendMessage}
           disabled={
