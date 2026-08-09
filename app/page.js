@@ -58,14 +58,14 @@ function makeMesh(count, seedOffset) {
     const cy = 50 + curveRadius * Math.sin((curveAngle * Math.PI) / 180);
     return {
       d: `M${x1.toFixed(2)},${y1.toFixed(2)} Q${cx.toFixed(2)},${cy.toFixed(2)} ${x2.toFixed(2)},${y2.toFixed(2)}`,
-      opacity: 0.15 + rand(s * 17.34) * 0.35,
-      width: 0.25 + rand(s * 3.14) * 0.3,
+      opacity: 0.4 + rand(s * 17.34) * 0.45,
+      width: 0.5 + rand(s * 3.14) * 0.5,
     };
   });
 }
 
-const MESH_A = makeMesh(30, 1);
-const MESH_B = makeMesh(30, 500);
+const MESH_A = makeMesh(34, 1);
+const MESH_B = makeMesh(34, 500);
 
 function Core({ thinking }) {
   return (
@@ -81,9 +81,6 @@ function Core({ thinking }) {
           </radialGradient>
           <filter id="softBlur" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="1.2" />
-          </filter>
-          <filter id="meshBlur" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="0.5" />
           </filter>
         </defs>
 
@@ -102,19 +99,19 @@ function Core({ thinking }) {
           ))}
         </g>
 
-        <g className="mesh-a" filter="url(#meshBlur)">
+        <g className="mesh-a">
           {MESH_A.map((m, i) => (
-            <path key={i} d={m.d} fill="none" stroke="var(--ember)" strokeWidth={m.width} opacity={m.opacity} />
+            <path key={i} d={m.d} fill="none" stroke="var(--ember)" strokeWidth={m.width} opacity={m.opacity} strokeLinecap="round" />
           ))}
         </g>
 
-        <g className="mesh-b" filter="url(#meshBlur)">
+        <g className="mesh-b">
           {MESH_B.map((m, i) => (
-            <path key={i} d={m.d} fill="none" stroke="var(--gold)" strokeWidth={m.width} opacity={m.opacity} />
+            <path key={i} d={m.d} fill="none" stroke="var(--gold-bright)" strokeWidth={m.width} opacity={m.opacity} strokeLinecap="round" />
           ))}
         </g>
 
-        <g className="streaks" filter="url(#softBlur)">
+        <g className="streaks">
           {RAYS.map((r, i) => (
             <line
               key={i}
@@ -122,15 +119,16 @@ function Core({ thinking }) {
               y1="50"
               x2={50 + r.length * Math.cos((r.angle * Math.PI) / 180)}
               y2={50 + r.length * Math.sin((r.angle * Math.PI) / 180)}
-              stroke="var(--ember)"
-              strokeWidth="0.3"
-              opacity="0.3"
+              stroke="var(--gold-bright)"
+              strokeWidth="0.4"
+              opacity="0.55"
+              strokeLinecap="round"
             />
           ))}
         </g>
 
         <g className="core-glow">
-          <circle cx="50" cy="50" r="16" fill="url(#coreGlow)" />
+          <circle cx="50" cy="50" r="18" fill="url(#coreGlow)" />
           <circle cx="50" cy="50" r="4" fill="#ffffff" filter="url(#softBlur)" />
         </g>
       </svg>
