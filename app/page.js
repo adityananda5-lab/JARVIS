@@ -1,555 +1,654 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import * as THREE from "three";
 
-/*
-  J.A.R.V.I.S. ENERGY CORE
+const BOOT_LINES = [
+  { text: "INITIALIZING J.A.R.V.I.S. CORE...", dim: false },
+  { text: "loading neural interface", dim: true },
+  { text: "calibrating voice interface", dim: true },
+  { text: "establishing cognitive link", dim: true },
+  { text: "ALL SYSTEMS NOMINAL", dim: false },
+];
 
-  IMPORTANT:
-  This intentionally does NOT use Three.js.
-
-  The reference visual is not a planet, solar system,
-  particle sphere, or orbit visualization.
-
-  It is a chaotic electromagnetic/plasma field made
-  from branching irregular filaments surrounding a
-  small white-hot energy core.
-*/
-
-function EnergyCore({ thinking }) {
-  const canvasRef = useRef(null);
+function Core({ active = false }) {
+  const mountRef = useRef(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const mount = mountRef.current;
+    if (!mount) return;
 
-    const ctx = canvas.getContext("2d", {
+    /* =========================================================
+       SCENE
+    ========================================================= */
+
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      1,
+      0.1,
+      100
+    );
+
+    camera.position.set(0, 0, 7);
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
       alpha: true,
+      powerPreference: "high-performance",
     });
 
-    if (!ctx) return;
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio || 1, 2)
+    );
 
-    let width = 0;
-    let height = 0;
-    let dpr = 1;
-    let animationFrame = 0;
+    renderer.setClearColor(0x000000, 0);
 
-    const TWO_PI = Math.PI * 2;
+    mount.appendChild(renderer.domElement);
 
-    let filaments = [];
-    let sparks = [];
+    /* =========================================================
+       PARTICLE TEXTURE
+    ========================================================= */
 
-    /*
-      A deterministic random generator gives us a stable
-      structure instead of rebuilding the entire core every frame.
-    */
-    let seed = Math.random() * 100000;
+    const particleCanvas = document.createElement("canvas");
+    particleCanvas.width = 64;
+    particleCanvas.height = 64;
 
-    function random() {
-      seed = (seed * 9301 + 49297) % 233280;
-      return seed / 233280;
-    }
+    const pctx = particleCanvas.getContext("2d");
 
-    function rand(min, max) {
-      return min + random() * (max - min);
-    }
+    const particleGradient = pctx.createRadialGradient(
+      32,
+      32,
+      0,
+      32,
+      32,
+      32
+    );
 
-    function resize() {
-      const rect = canvas.getBoundingClientRect();
+    particleGradient.addColorStop(
+      0,
+      "rgba(255,255,255,1)"
+    );
 
-      width = Math.max(1, rect.width);
-      height = Math.max(1, rect.height);
+    particleGradient.addColorStop(
+      0.12,
+      "rgba(220,255,255,1)"
+    );
 
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+    particleGradient.addColorStop(
+      0.35,
+      "rgba(80,240,255,0.9)"
+    );
 
-      canvas.width = Math.floor(width * dpr);
-      canvas.height = Math.floor(height * dpr);
+    particleGradient.addColorStop(
+      0.7,
+      "rgba(0,190,255,0.35)"
+    );
 
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    particleGradient.addColorStop(
+      1,
+      "rgba(0,100,255,0)"
+    );
 
-      buildField();
-    }
+    pctx.fillStyle = particleGradient;
+    pctx.fillRect(0, 0, 64, 64);
 
-    /*
-      Creates ONE irregular electrical filament.
+    const particleTexture = new THREE.CanvasTexture(
+      particleCanvas
+    );
 
-      Unlike a radial ray, every filament changes direction
-      repeatedly and can branch.
-    */
-    function createFilament(angle, length, startRadius, depth = 0) {
-      const points = [];
+    /* =========================================================
+       CORE GLOW TEXTURE
+    ========================================================= */
 
-      let x = 0;
-      let y = 0;
+    const glowCanvas = document.createElement("canvas");
+    glowCanvas.width = 256;
+    glowCanvas.height = 256;
 
-      let currentAngle = angle;
+    const gctx = glowCanvas.getContext("2d");
 
-      const steps = Math.max(10, Math.floor(length / 4));
+    const glowGradient = gctx.createRadialGradient(
+      128,
+      128,
+      0,
+      128,
+      128,
+      128
+    );
 
-      let radius = startRadius;
+    glowGradient.addColorStop(
+      0,
+      "rgba(255,255,255,1)"
+    );
 
-      for (let i = 0; i < steps; i++) {
-        /*
-          Strong angular instability creates the tangled,
-          broken-electrical appearance from the reference.
-        */
-        currentAngle += rand(-0.34, 0.34);
+    glowGradient.addColorStop(
+      0.08,
+      "rgba(210,255,255,1)"
+    );
 
-        /*
-          Occasional dramatic direction change.
-        */
-        if (random() < 0.07) {
-          currentAngle += rand(-0.8, 0.8);
-        }
+    glowGradient.addColorStop(
+      0.2,
+      "rgba(80,240,255,0.95)"
+    );
 
-        radius += rand(1.2, 4.2);
+    glowGradient.addColorStop(
+      0.45,
+      "rgba(0,200,255,0.45)"
+    );
 
-        const jitterX = rand(-3.5, 3.5);
-        const jitterY = rand(-3.5, 3.5);
+    glowGradient.addColorStop(
+      0.75,
+      "rgba(0,120,255,0.12)"
+    );
 
-        x = Math.cos(currentAngle) * radius + jitterX;
-        y = Math.sin(currentAngle) * radius + jitterY;
+    glowGradient.addColorStop(
+      1,
+      "rgba(0,80,255,0)"
+    );
 
-        points.push({
-          x,
-          y,
-          brightness: rand(0.45, 1),
-        });
+    gctx.fillStyle = glowGradient;
+    gctx.fillRect(0, 0, 256, 256);
 
-        /*
-          Random branches.
-        */
-        if (
-          depth < 2 &&
-          i > 5 &&
-          i < steps - 8 &&
-          random() < 0.055
-        ) {
-          const branchAngle =
-            currentAngle + rand(-1.15, 1.15);
+    const glowTexture = new THREE.CanvasTexture(
+      glowCanvas
+    );
 
-          const branchLength = length * rand(0.22, 0.48);
+    /* =========================================================
+       PARTICLES
+    ========================================================= */
 
-          filaments.push(
-            createFilament(
-              branchAngle,
-              branchLength,
-              radius,
-              depth + 1
-            )
-          );
-        }
+    const PARTICLE_COUNT = 2300;
 
-        /*
-          Branching filament may occasionally terminate early.
-        */
-        if (i > steps * 0.55 && random() < 0.025) {
-          break;
-        }
-      }
+    const positions = new Float32Array(
+      PARTICLE_COUNT * 3
+    );
 
-      return {
-        points,
-        width: rand(0.35, 1.25) * (depth === 0 ? 1 : 0.65),
-        alpha: rand(0.3, 0.9),
-        phase: rand(0, TWO_PI),
-        speed: rand(0.003, 0.012),
-        depth,
-      };
-    }
+    const basePositions = new Float32Array(
+      PARTICLE_COUNT * 3
+    );
 
-    function buildField() {
-      filaments = [];
-      sparks = [];
+    const velocities = new Float32Array(
+      PARTICLE_COUNT * 3
+    );
+
+    const randoms = new Float32Array(
+      PARTICLE_COUNT
+    );
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const i3 = i * 3;
 
       /*
-        Reference composition:
-        - dense center
-        - chaotic surrounding field
-        - irregular outer edge
-        - no perfect circle
-      */
+       * Instead of creating a perfect sphere, create a
+       * distorted energy cloud.
+       */
 
-      const baseCount = width < 600 ? 115 : 180;
+      const theta =
+        Math.random() * Math.PI * 2;
 
-      for (let i = 0; i < baseCount; i++) {
-        /*
-          Deliberately NON-uniform angle distribution.
-        */
-        const angle =
-          (i / baseCount) * TWO_PI +
-          rand(-0.18, 0.18);
-
-        /*
-          Different lengths prevent the "sun ray" appearance.
-        */
-        const length = rand(
-          Math.min(width, height) * 0.18,
-          Math.min(width, height) * 0.42
+      const phi =
+        Math.acos(
+          2 * Math.random() - 1
         );
 
-        /*
-          Some filaments begin closer to the center,
-          some deeper inside the plasma.
-        */
-        const startRadius = rand(5, 25);
+      const radius =
+        0.35 +
+        Math.pow(Math.random(), 0.65) *
+          1.75;
 
-        filaments.push(
-          createFilament(
-            angle,
-            length,
-            startRadius,
-            0
-          )
-        );
-      }
-
-      /*
-        Tiny floating energy particles.
-        These are sparse — NOT a particle sphere.
-      */
-      const sparkCount = width < 600 ? 100 : 170;
-
-      for (let i = 0; i < sparkCount; i++) {
-        const angle = random() * TWO_PI;
-
-        const radius = Math.pow(random(), 0.65) *
-          Math.min(width, height) *
-          0.34;
-
-        sparks.push({
-          x: Math.cos(angle) * radius,
-          y: Math.sin(angle) * radius,
-          radius: rand(0.35, 1.5),
-          alpha: rand(0.2, 0.8),
-          phase: rand(0, TWO_PI),
-          speed: rand(0.01, 0.04),
-        });
-      }
-    }
-
-    function drawGlow(cx, cy, pulse) {
-      /*
-        Very small central glow.
-        Keeping this restrained prevents the "giant sun" effect.
-      */
-
-      const inner = 7 + pulse * 3;
-      const outer = 70 + pulse * 25;
-
-      const gradient = ctx.createRadialGradient(
-        cx,
-        cy,
-        0,
-        cx,
-        cy,
-        outer
-      );
-
-      gradient.addColorStop(
-        0,
-        "rgba(255,255,245,1)"
-      );
-
-      gradient.addColorStop(
-        0.04,
-        "rgba(255,248,210,1)"
-      );
-
-      gradient.addColorStop(
-        0.12,
-        "rgba(255,190,70,0.95)"
-      );
-
-      gradient.addColorStop(
-        0.35,
-        "rgba(255,105,20,0.35)"
-      );
-
-      gradient.addColorStop(
-        1,
-        "rgba(255,70,10,0)"
-      );
-
-      ctx.fillStyle = gradient;
-
-      ctx.beginPath();
-      ctx.arc(
-        cx,
-        cy,
-        outer,
-        0,
-        TWO_PI
-      );
-
-      ctx.fill();
-
-      /*
-        White-hot center.
-      */
-      const coreGradient = ctx.createRadialGradient(
-        cx,
-        cy,
-        0,
-        cx,
-        cy,
-        inner
-      );
-
-      coreGradient.addColorStop(
-        0,
-        "rgba(255,255,255,1)"
-      );
-
-      coreGradient.addColorStop(
-        0.35,
-        "rgba(255,255,230,1)"
-      );
-
-      coreGradient.addColorStop(
-        0.7,
-        "rgba(255,205,100,1)"
-      );
-
-      coreGradient.addColorStop(
-        1,
-        "rgba(255,110,20,0)"
-      );
-
-      ctx.fillStyle = coreGradient;
-
-      ctx.beginPath();
-      ctx.arc(
-        cx,
-        cy,
-        inner,
-        0,
-        TWO_PI
-      );
-
-      ctx.fill();
-    }
-
-    function drawFilament(filament, time, cx, cy) {
-      const points = filament.points;
-
-      if (!points || points.length < 2) return;
-
-      /*
-        Filaments subtly vibrate.
-        This is what makes the structure feel alive.
-      */
-
-      const flicker =
+      const distortion =
         0.72 +
-        Math.sin(
-          time * filament.speed * 1000 +
-          filament.phase
-        ) *
-          0.28;
+        Math.random() * 0.55;
 
-      const alpha =
-        filament.alpha *
-        flicker;
+      let x =
+        Math.sin(phi) *
+        Math.cos(theta) *
+        radius;
 
-      ctx.beginPath();
+      let y =
+        Math.cos(phi) *
+        radius *
+        distortion;
 
-      for (let i = 0; i < points.length; i++) {
-        const p = points[i];
-
-        const localWave =
-          Math.sin(
-            time * 0.0025 +
-            i * 0.85 +
-            filament.phase
-          ) * 1.6;
-
-        const x =
-          cx +
-          p.x +
-          Math.cos(i * 1.7) * localWave;
-
-        const y =
-          cy +
-          p.y +
-          Math.sin(i * 1.3) * localWave;
-
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      }
+      let z =
+        Math.sin(phi) *
+        Math.sin(theta) *
+        radius;
 
       /*
-        Outer filaments are darker and thinner.
-        Inner filaments are brighter.
-      */
-      const glow =
-        filament.depth === 0
-          ? "rgba(255,115,25,"
-          : "rgba(255,165,75,";
+       * Stretch the energy cloud.
+       */
 
-      ctx.strokeStyle =
-        glow + Math.min(alpha, 0.9) + ")";
+      x *= 1.08;
+      y *= 0.9;
+      z *= 0.72;
 
-      ctx.lineWidth = filament.width;
+      /*
+       * Add slight chaotic displacement.
+       */
 
-      ctx.shadowBlur =
-        filament.depth === 0 ? 5 : 2;
+      x +=
+        Math.sin(theta * 3.0) *
+        radius *
+        0.12;
 
-      ctx.shadowColor =
-        "rgba(255,100,20,0.7)";
+      y +=
+        Math.cos(theta * 4.0) *
+        radius *
+        0.12;
 
-      ctx.stroke();
+      z +=
+        Math.sin(phi * 5.0) *
+        radius *
+        0.08;
 
-      ctx.shadowBlur = 0;
+      positions[i3] = x;
+      positions[i3 + 1] = y;
+      positions[i3 + 2] = z;
+
+      basePositions[i3] = x;
+      basePositions[i3 + 1] = y;
+      basePositions[i3 + 2] = z;
+
+      velocities[i3] =
+        (Math.random() - 0.5) * 0.01;
+
+      velocities[i3 + 1] =
+        (Math.random() - 0.5) * 0.01;
+
+      velocities[i3 + 2] =
+        (Math.random() - 0.5) * 0.01;
+
+      randoms[i] = Math.random();
     }
 
-    function drawSparks(time, cx, cy) {
-      for (const spark of sparks) {
-        const alpha =
-          spark.alpha *
-          (0.55 +
-            Math.sin(
-              time * spark.speed +
-                spark.phase
-            ) *
-              0.45);
+    const particleGeometry =
+      new THREE.BufferGeometry();
 
-        ctx.fillStyle =
-          `rgba(255,190,105,${Math.max(
-            0,
-            alpha
-          )})`;
+    particleGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(
+        positions,
+        3
+      )
+    );
 
-        ctx.beginPath();
+    const particleMaterial =
+      new THREE.PointsMaterial({
+        size: 0.055,
+        map: particleTexture,
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        color: new THREE.Color(
+          0x4defff
+        ),
+        sizeAttenuation: true,
+      });
 
-        ctx.arc(
-          cx + spark.x,
-          cy + spark.y,
-          spark.radius,
-          0,
-          TWO_PI
-        );
-
-        ctx.fill();
-      }
-    }
-
-    function draw(time) {
-      ctx.clearRect(
-        0,
-        0,
-        width,
-        height
+    const particles =
+      new THREE.Points(
+        particleGeometry,
+        particleMaterial
       );
 
-      const cx = width / 2;
-      const cy = height / 2;
+    scene.add(particles);
 
-      /*
-        Processing mode increases activity,
-        but does NOT simply make the object huge.
-      */
-      const activity = thinking ? 1.45 : 1;
+    /* =========================================================
+       BRIGHTER INNER PARTICLES
+    ========================================================= */
 
-      /*
-        Slight breathing pulse.
-        Very subtle.
-      */
-      const pulse =
-        (Math.sin(time * 0.0022 * activity) + 1) /
+    const INNER_COUNT = 500;
+
+    const innerPositions =
+      new Float32Array(
+        INNER_COUNT * 3
+      );
+
+    for (let i = 0; i < INNER_COUNT; i++) {
+      const i3 = i * 3;
+
+      const theta =
+        Math.random() *
+        Math.PI *
         2;
 
-      /*
-        Draw a faint ambient plasma haze.
-      */
-      const hazeRadius =
-        Math.min(width, height) *
-        0.25;
-
-      const haze =
-        ctx.createRadialGradient(
-          cx,
-          cy,
-          0,
-          cx,
-          cy,
-          hazeRadius
+      const phi =
+        Math.acos(
+          2 * Math.random() - 1
         );
 
-      haze.addColorStop(
-        0,
-        `rgba(255,85,10,${0.10 +
-          pulse * 0.05})`
+      const radius =
+        Math.pow(
+          Math.random(),
+          2.3
+        ) * 0.9;
+
+      innerPositions[i3] =
+        Math.sin(phi) *
+        Math.cos(theta) *
+        radius;
+
+      innerPositions[i3 + 1] =
+        Math.cos(phi) *
+        radius;
+
+      innerPositions[i3 + 2] =
+        Math.sin(phi) *
+        Math.sin(theta) *
+        radius;
+    }
+
+    const innerGeometry =
+      new THREE.BufferGeometry();
+
+    innerGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(
+        innerPositions,
+        3
+      )
+    );
+
+    const innerMaterial =
+      new THREE.PointsMaterial({
+        size: 0.08,
+        map: particleTexture,
+        transparent: true,
+        opacity: 1,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        color: new THREE.Color(
+          0xcfffff
+        ),
+      });
+
+    const innerParticles =
+      new THREE.Points(
+        innerGeometry,
+        innerMaterial
       );
 
-      haze.addColorStop(
-        0.45,
-        "rgba(255,55,5,0.035)"
+    scene.add(innerParticles);
+
+    /* =========================================================
+       NEURAL CONNECTIONS
+    ========================================================= */
+
+    const LINE_COUNT = 650;
+
+    const linePositions =
+      new Float32Array(
+        LINE_COUNT * 6
       );
 
-      haze.addColorStop(
-        1,
-        "rgba(255,30,0,0)"
+    /*
+     * Connect nearby particles by using points that are
+     * deliberately close in the generated particle array.
+     * This creates a neural / filament appearance.
+     */
+
+    for (let i = 0; i < LINE_COUNT; i++) {
+      const a =
+        Math.floor(
+          Math.random() *
+            PARTICLE_COUNT
+        );
+
+      let b =
+        a +
+        Math.floor(
+          (Math.random() - 0.5) *
+            90
+        );
+
+      if (b < 0) b += PARTICLE_COUNT;
+      if (b >= PARTICLE_COUNT)
+        b -= PARTICLE_COUNT;
+
+      const ai = a * 3;
+      const bi = b * 3;
+      const li = i * 6;
+
+      linePositions[li] =
+        positions[ai];
+
+      linePositions[li + 1] =
+        positions[ai + 1];
+
+      linePositions[li + 2] =
+        positions[ai + 2];
+
+      linePositions[li + 3] =
+        positions[bi];
+
+      linePositions[li + 4] =
+        positions[bi + 1];
+
+      linePositions[li + 5] =
+        positions[bi + 2];
+    }
+
+    const lineGeometry =
+      new THREE.BufferGeometry();
+
+    lineGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(
+        linePositions,
+        3
+      )
+    );
+
+    const lineMaterial =
+      new THREE.LineBasicMaterial({
+        color: 0x39eaff,
+        transparent: true,
+        opacity: 0.16,
+        blending:
+          THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+
+    const network =
+      new THREE.LineSegments(
+        lineGeometry,
+        lineMaterial
       );
 
-      ctx.fillStyle = haze;
+    scene.add(network);
 
-      ctx.beginPath();
-      ctx.arc(
-        cx,
-        cy,
-        hazeRadius,
-        0,
-        TWO_PI
+    /* =========================================================
+       OUTER ENERGY STREAKS
+    ========================================================= */
+
+    const STREAK_COUNT = 260;
+
+    const streakPositions =
+      new Float32Array(
+        STREAK_COUNT * 6
       );
 
-      ctx.fill();
+    const streakData = [];
 
-      /*
-        Back filaments first.
-      */
-      for (const filament of filaments) {
-        if (filament.depth > 0) {
-          drawFilament(
-            filament,
-            time * activity,
-            cx,
-            cy
+    for (
+      let i = 0;
+      i < STREAK_COUNT;
+      i++
+    ) {
+      const theta =
+        Math.random() *
+        Math.PI *
+        2;
+
+      const phi =
+        Math.acos(
+          2 * Math.random() - 1
+        );
+
+      const direction =
+        new THREE.Vector3(
+          Math.sin(phi) *
+            Math.cos(theta),
+          Math.cos(phi),
+          Math.sin(phi) *
+            Math.sin(theta)
+        ).normalize();
+
+      const startRadius =
+        1.2 +
+        Math.random() *
+          0.8;
+
+      const length =
+        0.15 +
+        Math.random() *
+          0.75;
+
+      streakData.push({
+        direction,
+        startRadius,
+        length,
+        phase:
+          Math.random() *
+          Math.PI *
+          2,
+      });
+
+      const start =
+        direction
+          .clone()
+          .multiplyScalar(
+            startRadius
           );
-        }
-      }
 
-      /*
-        Main filaments.
-      */
-      for (const filament of filaments) {
-        if (filament.depth === 0) {
-          drawFilament(
-            filament,
-            time * activity,
-            cx,
-            cy
+      const end =
+        direction
+          .clone()
+          .multiplyScalar(
+            startRadius +
+              length
           );
-        }
-      }
 
-      drawSparks(
-        time * activity,
-        cx,
-        cy
+      const j = i * 6;
+
+      streakPositions[j] =
+        start.x;
+
+      streakPositions[j + 1] =
+        start.y;
+
+      streakPositions[j + 2] =
+        start.z;
+
+      streakPositions[j + 3] =
+        end.x;
+
+      streakPositions[j + 4] =
+        end.y;
+
+      streakPositions[j + 5] =
+        end.z;
+    }
+
+    const streakGeometry =
+      new THREE.BufferGeometry();
+
+    streakGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(
+        streakPositions,
+        3
+      )
+    );
+
+    const streakMaterial =
+      new THREE.LineBasicMaterial({
+        color: 0x6ff7ff,
+        transparent: true,
+        opacity: 0.24,
+        blending:
+          THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+
+    const streaks =
+      new THREE.LineSegments(
+        streakGeometry,
+        streakMaterial
       );
 
-      drawGlow(
-        cx,
-        cy,
-        pulse * activity
+    scene.add(streaks);
+
+    /* =========================================================
+       CENTRAL ENERGY
+    ========================================================= */
+
+    const coreSprite =
+      new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: glowTexture,
+          transparent: true,
+          opacity: 0.95,
+          blending:
+            THREE.AdditiveBlending,
+          depthWrite: false,
+          color: 0x66f5ff,
+        })
       );
 
-      animationFrame =
-        requestAnimationFrame(draw);
+    coreSprite.scale.set(
+      2.15,
+      2.15,
+      1
+    );
+
+    scene.add(coreSprite);
+
+    const whiteCore =
+      new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: glowTexture,
+          transparent: true,
+          opacity: 0.85,
+          blending:
+            THREE.AdditiveBlending,
+          depthWrite: false,
+          color: 0xffffff,
+        })
+      );
+
+    whiteCore.scale.set(
+      0.62,
+      0.62,
+      1
+    );
+
+    scene.add(whiteCore);
+
+    /* =========================================================
+       RESIZE
+    ========================================================= */
+
+    function resize() {
+      const width =
+        mount.clientWidth || 400;
+
+      const height =
+        mount.clientHeight || 400;
+
+      renderer.setSize(
+        width,
+        height,
+        false
+      );
+
+      camera.aspect =
+        width / height;
+
+      camera.updateProjectionMatrix();
     }
 
     resize();
@@ -559,8 +658,397 @@ function EnergyCore({ thinking }) {
       resize
     );
 
-    animationFrame =
-      requestAnimationFrame(draw);
+    /* =========================================================
+       ANIMATION
+    ========================================================= */
+
+    const clock =
+      new THREE.Clock();
+
+    let animationFrame;
+
+    function animate() {
+      const time =
+        clock.getElapsedTime();
+
+      /*
+       * Active state = JARVIS speaking,
+       * listening or processing.
+       */
+
+      const targetEnergy =
+        active ? 1 : 0;
+
+      /*
+       * Smooth energy transition.
+       */
+
+      const energy =
+        THREE.MathUtils.lerp(
+          active ? 1 : 0,
+          active ? 1 : 0,
+          0.1
+        );
+
+      /*
+       * The actual movement multiplier.
+       */
+
+      const movement =
+        active ? 1.8 : 0.72;
+
+      /* -----------------------------------------
+         PARTICLE MOTION
+      ----------------------------------------- */
+
+      const positionAttribute =
+        particleGeometry.attributes
+          .position;
+
+      for (
+        let i = 0;
+        i < PARTICLE_COUNT;
+        i++
+      ) {
+        const i3 = i * 3;
+
+        const bx =
+          basePositions[i3];
+
+        const by =
+          basePositions[i3 + 1];
+
+        const bz =
+          basePositions[i3 + 2];
+
+        const r =
+          randoms[i];
+
+        /*
+         * Flow field.
+         */
+
+        const wave1 =
+          Math.sin(
+            time * 1.4 +
+              by * 3.5 +
+              r * 8
+          );
+
+        const wave2 =
+          Math.cos(
+            time * 1.1 +
+              bx * 4.2 +
+              r * 6
+          );
+
+        const wave3 =
+          Math.sin(
+            time * 1.7 +
+              bz * 5.0 +
+              r * 10
+          );
+
+        /*
+         * Rotational flow.
+         */
+
+        const angle =
+          time *
+            (0.18 +
+              r * 0.15) +
+          by *
+            0.5;
+
+        const cos =
+          Math.cos(angle);
+
+        const sin =
+          Math.sin(angle);
+
+        let x =
+          bx * cos -
+          bz * sin;
+
+        let z =
+          bx * sin +
+          bz * cos;
+
+        let y = by;
+
+        /*
+         * Organic turbulence.
+         */
+
+        x +=
+          wave1 *
+          0.045 *
+          movement;
+
+        y +=
+          wave2 *
+          0.045 *
+          movement;
+
+        z +=
+          wave3 *
+          0.045 *
+          movement;
+
+        /*
+         * Active state causes the cloud to
+         * breathe outward.
+         */
+
+        const expansion =
+          active
+            ? 1.0 +
+              0.42 *
+                (0.35 +
+                  r * 0.65)
+            : 0.78 +
+              r * 0.08;
+
+        x *= expansion;
+        y *= expansion;
+        z *= expansion;
+
+        /*
+         * Additional radial pulse.
+         */
+
+        if (active) {
+          const distance =
+            Math.sqrt(
+              x * x +
+                y * y +
+                z * z
+            );
+
+          const pulse =
+            Math.sin(
+              time * 4 -
+                distance * 4
+            ) *
+            0.045;
+
+          x +=
+            x *
+            pulse;
+
+          y +=
+            y *
+            pulse;
+
+          z +=
+            z *
+            pulse;
+        }
+
+        positionAttribute.array[
+          i3
+        ] = x;
+
+        positionAttribute.array[
+          i3 + 1
+        ] = y;
+
+        positionAttribute.array[
+          i3 + 2
+        ] = z;
+      }
+
+      positionAttribute.needsUpdate =
+        true;
+
+      /* -----------------------------------------
+         PARTICLE SIZE
+      ----------------------------------------- */
+
+      particleMaterial.size =
+        active ? 0.075 : 0.045;
+
+      particleMaterial.opacity =
+        active ? 0.98 : 0.72;
+
+      /* -----------------------------------------
+         NETWORK
+      ----------------------------------------- */
+
+      network.rotation.y =
+        time * 0.08;
+
+      network.rotation.x =
+        Math.sin(time * 0.25) *
+        0.08;
+
+      lineMaterial.opacity =
+        active ? 0.34 : 0.11;
+
+      /* -----------------------------------------
+         OUTER STREAKS
+      ----------------------------------------- */
+
+      for (
+        let i = 0;
+        i < STREAK_COUNT;
+        i++
+      ) {
+        const data =
+          streakData[i];
+
+        const pulse =
+          Math.sin(
+            time * 2.4 +
+              data.phase
+          );
+
+        const activeBoost =
+          active
+            ? 0.8 +
+              pulse * 0.35
+            : 0.35;
+
+        const startRadius =
+          data.startRadius +
+          activeBoost *
+            Math.max(
+              0,
+              pulse
+            ) *
+            0.45;
+
+        const start =
+          data.direction
+            .clone()
+            .multiplyScalar(
+              startRadius
+            );
+
+        const end =
+          data.direction
+            .clone()
+            .multiplyScalar(
+              startRadius +
+                data.length *
+                  (active
+                    ? 1.7
+                    : 0.55)
+            );
+
+        const j = i * 6;
+
+        streakPositions[j] =
+          start.x;
+
+        streakPositions[j + 1] =
+          start.y;
+
+        streakPositions[j + 2] =
+          start.z;
+
+        streakPositions[j + 3] =
+          end.x;
+
+        streakPositions[j + 4] =
+          end.y;
+
+        streakPositions[j + 5] =
+          end.z;
+      }
+
+      streakGeometry.attributes.position.needsUpdate =
+        true;
+
+      streakMaterial.opacity =
+        active ? 0.42 : 0.08;
+
+      /* -----------------------------------------
+         CENTRAL GLOW
+      ----------------------------------------- */
+
+      const pulse =
+        1 +
+        Math.sin(time * 2.8) *
+          0.08;
+
+      const activeScale =
+        active ? 1.65 : 1;
+
+      coreSprite.scale.set(
+        2.15 *
+          pulse *
+          activeScale,
+        2.15 *
+          pulse *
+          activeScale,
+        1
+      );
+
+      whiteCore.scale.set(
+        0.62 *
+          (active ? 1.35 : 1) *
+          pulse,
+        0.62 *
+          (active ? 1.35 : 1) *
+          pulse,
+        1
+      );
+
+      coreSprite.material.opacity =
+        active ? 1 : 0.72;
+
+      whiteCore.material.opacity =
+        active ? 1 : 0.75;
+
+      /* -----------------------------------------
+         GLOBAL ROTATION
+      ----------------------------------------- */
+
+      particles.rotation.y =
+        time * 0.08;
+
+      particles.rotation.x =
+        Math.sin(time * 0.18) *
+        0.08;
+
+      innerParticles.rotation.y =
+        -time * 0.12;
+
+      /* -----------------------------------------
+         CAMERA BREATHING
+      ----------------------------------------- */
+
+      camera.position.x =
+        Math.sin(time * 0.18) *
+        0.05;
+
+      camera.position.y =
+        Math.cos(time * 0.16) *
+        0.035;
+
+      camera.lookAt(
+        0,
+        0,
+        0
+      );
+
+      renderer.render(
+        scene,
+        camera
+      );
+
+      animationFrame =
+        requestAnimationFrame(
+          animate
+        );
+    }
+
+    animate();
+
+    /* =========================================================
+       CLEANUP
+    ========================================================= */
 
     return () => {
       cancelAnimationFrame(
@@ -571,54 +1059,63 @@ function EnergyCore({ thinking }) {
         "resize",
         resize
       );
+
+      particleGeometry.dispose();
+      particleMaterial.dispose();
+
+      innerGeometry.dispose();
+      innerMaterial.dispose();
+
+      lineGeometry.dispose();
+      lineMaterial.dispose();
+
+      streakGeometry.dispose();
+      streakMaterial.dispose();
+
+      particleTexture.dispose();
+      glowTexture.dispose();
+
+      coreSprite.material.dispose();
+      whiteCore.material.dispose();
+
+      renderer.dispose();
+
+      if (
+        mount.contains(
+          renderer.domElement
+        )
+      ) {
+        mount.removeChild(
+          renderer.domElement
+        );
+      }
     };
-  }, [thinking]);
+  }, [active]);
 
   return (
     <div
-      className={`energy-core ${
-        thinking ? "energy-thinking" : ""
+      className={`core ${
+        active ? "active" : ""
       }`}
     >
-      <canvas
-        ref={canvasRef}
-        className="energy-canvas"
+      <div
+        ref={mountRef}
+        className="core-canvas-wrap"
       />
+
+      <div className="core-aura" />
+      <div className="core-ring ring-one" />
+      <div className="core-ring ring-two" />
     </div>
   );
 }
-
-/* --------------------------------------------------
-   BOOT
--------------------------------------------------- */
-
-const BOOT_LINES = [
-  {
-    text: "INITIALIZING J.A.R.V.I.S. CORE...",
-    dim: false,
-  },
-  {
-    text: "loading language subsystem",
-    dim: true,
-  },
-  {
-    text: "calibrating voice interface",
-    dim: true,
-  },
-  {
-    text: "ALL SYSTEMS NOMINAL",
-    dim: false,
-  },
-];
 
 export default function Home() {
   const [booted, setBooted] =
     useState(false);
 
-  const [
-    visibleBootLines,
-    setVisibleBootLines,
-  ] = useState(0);
+  const [visibleBootLines, setVisibleBootLines] =
+    useState(0);
 
   const [messages, setMessages] =
     useState([
@@ -641,63 +1138,68 @@ export default function Home() {
   const [listening, setListening] =
     useState(false);
 
+  const [speaking, setSpeaking] =
+    useState(false);
+
   const logRef =
     useRef(null);
 
   const recognitionRef =
     useRef(null);
 
-  /*
-    Boot sequence
-  */
+  /* =========================================================
+     BOOT
+  ========================================================= */
+
   useEffect(() => {
     if (
       visibleBootLines <
       BOOT_LINES.length
     ) {
       const timer =
-        setTimeout(() => {
-          setVisibleBootLines(
-            (n) => n + 1
-          );
-        }, 380);
+        setTimeout(
+          () =>
+            setVisibleBootLines(
+              (n) => n + 1
+            ),
+          330
+        );
 
       return () =>
         clearTimeout(timer);
     }
 
     const timer =
-      setTimeout(() => {
-        setBooted(true);
-      }, 500);
+      setTimeout(
+        () => setBooted(true),
+        650
+      );
 
     return () =>
       clearTimeout(timer);
   }, [visibleBootLines]);
 
-  /*
-    Keep chat scrolled to newest message.
-  */
-  useEffect(() => {
-    if (!logRef.current) return;
+  /* =========================================================
+     SCROLL
+  ========================================================= */
 
-    logRef.current.scrollTo({
+  useEffect(() => {
+    logRef.current?.scrollTo({
       top:
         logRef.current.scrollHeight,
       behavior: "smooth",
     });
   }, [messages, loading]);
 
-  /*
-    Speech recognition.
-  */
-  useEffect(() => {
-    if (typeof window === "undefined")
-      return;
+  /* =========================================================
+     SPEECH RECOGNITION
+  ========================================================= */
 
+  useEffect(() => {
     const SpeechRecognition =
-      window.SpeechRecognition ||
-      window.webkitSpeechRecognition;
+      typeof window !== "undefined" &&
+      (window.SpeechRecognition ||
+        window.webkitSpeechRecognition);
 
     if (!SpeechRecognition)
       return;
@@ -709,32 +1211,37 @@ export default function Home() {
     recognition.interimResults = false;
     recognition.lang = "en-US";
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (e) => {
       const transcript =
-        event.results[0][0]
+        e.results[0][0]
           .transcript;
 
       setInput(transcript);
     };
 
-    recognition.onerror = (event) => {
+    recognition.onerror = (e) => {
       setListening(false);
 
       if (
-        event.error ===
-          "not-allowed" ||
-        event.error ===
+        e.error === "not-allowed" ||
+        e.error ===
           "service-not-allowed"
       ) {
         alert(
-          "Microphone access was blocked. Allow microphone access for this website and try again."
+          "Microphone access was blocked. Allow microphone access for this page."
+        );
+      } else if (
+        e.error !== "no-speech"
+      ) {
+        alert(
+          "Voice input error: " +
+            e.error
         );
       }
     };
 
-    recognition.onend = () => {
+    recognition.onend = () =>
       setListening(false);
-    };
 
     recognitionRef.current =
       recognition;
@@ -747,70 +1254,71 @@ export default function Home() {
   }, []);
 
   function toggleMic() {
-    const recognition =
-      recognitionRef.current;
-
-    if (!recognition) {
+    if (!recognitionRef.current) {
       alert(
-        "Voice input is not supported in this browser. Try Chrome or Edge."
+        "Voice input isn't supported in this browser. Try Chrome or Edge."
       );
-
       return;
     }
 
     if (listening) {
-      try {
-        recognition.stop();
-      } catch {}
-
+      recognitionRef.current.stop();
       setListening(false);
       return;
     }
 
     try {
-      recognition.start();
+      recognitionRef.current.start();
       setListening(true);
     } catch {
       setListening(false);
     }
   }
 
-  /*
-    Text-to-speech API.
-  */
+  /* =========================================================
+     VOICE OUTPUT
+  ========================================================= */
+
   async function speak(text) {
     if (!voiceOn) return;
 
     try {
-      const response =
-        await fetch("/api/speak", {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            text,
-          }),
-        });
+      setSpeaking(true);
 
-      if (!response.ok) {
+      const res =
+        await fetch(
+          "/api/speak",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              text,
+            }),
+          }
+        );
+
+      if (!res.ok) {
         const data =
-          await response
+          await res
             .json()
             .catch(() => null);
+
+        setSpeaking(false);
 
         alert(
           "Voice playback failed: " +
             (data?.error ||
-              `HTTP ${response.status}`)
+              `HTTP ${res.status}`)
         );
 
         return;
       }
 
       const audioBlob =
-        await response.blob();
+        await res.blob();
 
       const audioUrl =
         URL.createObjectURL(
@@ -821,28 +1329,42 @@ export default function Home() {
         new Audio(audioUrl);
 
       audio.onended = () => {
+        setSpeaking(false);
+        URL.revokeObjectURL(
+          audioUrl
+        );
+      };
+
+      audio.onerror = () => {
+        setSpeaking(false);
         URL.revokeObjectURL(
           audioUrl
         );
       };
 
       await audio.play();
-    } catch (error) {
+    } catch (err) {
+      setSpeaking(false);
+
       alert(
         "Voice playback failed: " +
-          error.message
+          err.message
       );
     }
   }
 
-  /*
-    Send message to your existing API.
-  */
+  /* =========================================================
+     SEND MESSAGE
+  ========================================================= */
+
   async function sendMessage() {
     const text =
       input.trim();
 
-    if (!text || loading)
+    if (
+      !text ||
+      loading
+    )
       return;
 
     const nextMessages = [
@@ -853,127 +1375,163 @@ export default function Home() {
       },
     ];
 
-    setMessages(nextMessages);
+    setMessages(
+      nextMessages
+    );
+
     setInput("");
     setLoading(true);
 
     try {
-      const response =
-        await fetch("/api/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            messages:
-              nextMessages,
-          }),
-        });
+      const res =
+        await fetch(
+          "/api/chat",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              messages:
+                nextMessages,
+            }),
+          }
+        );
 
       const data =
-        await response
-          .json()
-          .catch(() => null);
+        await res.json();
 
-      if (!response.ok) {
-        setMessages((current) => [
-          ...current,
+      if (!res.ok) {
+        setMessages(
+          (m) => [
+            ...m,
+            {
+              role: "assistant",
+              content:
+                data.error ||
+                "Something went wrong.",
+              error: true,
+            },
+          ]
+        );
+      } else {
+        setMessages(
+          (m) => [
+            ...m,
+            {
+              role: "assistant",
+              content:
+                data.reply,
+            },
+          ]
+        );
+
+        speak(data.reply);
+      }
+    } catch {
+      setMessages(
+        (m) => [
+          ...m,
           {
             role: "assistant",
             content:
-              data?.error ||
-              "Something went wrong.",
+              "I couldn't reach the server. Check your connection.",
             error: true,
           },
-        ]);
-
-        return;
-      }
-
-      const reply =
-        data?.reply ||
-        "I received your request, but no response was returned.";
-
-      setMessages((current) => [
-        ...current,
-        {
-          role: "assistant",
-          content: reply,
-        },
-      ]);
-
-      speak(reply);
-    } catch {
-      setMessages((current) => [
-        ...current,
-        {
-          role: "assistant",
-          content:
-            "I couldn't reach the server. Check your connection and try again.",
-          error: true,
-        },
-      ]);
+        ]
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  /*
-    Enter = send
-  */
-  function handleKeyDown(event) {
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
-      event.preventDefault();
-      sendMessage();
-    }
-  }
+  /* =========================================================
+     CORE ACTIVE STATE
+  ========================================================= */
 
-  /*
-    Boot screen
-  */
+  const coreActive =
+    loading ||
+    listening ||
+    speaking;
+
+  /* =========================================================
+     BOOT SCREEN
+  ========================================================= */
+
   if (!booted) {
     return (
       <div className="boot-screen">
-        {BOOT_LINES.slice(
-          0,
-          visibleBootLines
-        ).map((line, index) => (
-          <div
-            key={index}
-            className={`boot-line ${
-              line.dim
-                ? "dim"
-                : ""
-            }`}
-          >
-            {line.text}
-          </div>
-        ))}
+        <div className="boot-core">
+          <div className="boot-core-dot" />
+        </div>
+
+        <div className="boot-lines">
+          {BOOT_LINES.slice(
+            0,
+            visibleBootLines
+          ).map(
+            (line, i) => (
+              <div
+                key={i}
+                className={`boot-line ${
+                  line.dim
+                    ? "dim"
+                    : ""
+                }`}
+              >
+                <span className="boot-prefix">
+                  {line.dim
+                    ? ">"
+                    : "◆"}
+                </span>
+
+                {line.text}
+              </div>
+            )
+          )}
+        </div>
       </div>
     );
   }
 
+  /* =========================================================
+     MAIN UI
+  ========================================================= */
+
   return (
-    <main className="app">
-      {/* HEADER */}
+    <div className="app">
+
+      <div className="ambient-grid" />
 
       <header className="header">
-        <div className="title-block">
-          <div className="wordmark">
-            J.A.R.V.I.S.
+
+        <div className="brand">
+
+          <div className="brand-mark">
+            J
           </div>
 
-          <div className="status-line">
-            <span className="status-dot" />
+          <div>
+            <div className="wordmark">
+              J.A.R.V.I.S.
+            </div>
 
-            {loading
-              ? "PROCESSING"
-              : "ONLINE"}
+            <div className="status-line">
+              <span className="status-dot" />
+
+              <span>
+                {loading
+                  ? "PROCESSING"
+                  : listening
+                  ? "LISTENING"
+                  : speaking
+                  ? "SPEAKING"
+                  : "ONLINE"}
+              </span>
+            </div>
           </div>
+
         </div>
 
         <button
@@ -984,58 +1542,76 @@ export default function Home() {
           }`}
           onClick={() =>
             setVoiceOn(
-              (value) => !value
+              (v) => !v
             )
           }
         >
+          <span className="voice-icon">
+            ◉
+          </span>
+
           VOICE{" "}
           {voiceOn
             ? "ON"
             : "OFF"}
         </button>
+
       </header>
 
-      {/* INITIAL JARVIS MESSAGE */}
+      {/* =====================================================
+          CORE
+      ===================================================== */}
 
-      <section
-        className="welcome-message"
-        aria-live="polite"
-      >
-        <div className="message-label">
-          JARVIS
+      <main className="main-stage">
+
+        <div className="core-wrapper">
+
+          <Core
+            active={
+              coreActive
+            }
+          />
+
+          <div className="core-label">
+
+            <span className="core-label-line" />
+
+            <span>
+              {loading
+                ? "PROCESSING"
+                : listening
+                ? "LISTENING"
+                : speaking
+                ? "RESPONDING"
+                : "J.A.R.V.I.S. CORE"}
+            </span>
+
+            <span className="core-label-line" />
+
+          </div>
+
         </div>
 
-        <div className="welcome-text">
-          Good to see you. Systems are
-          online — how can I help?
-        </div>
-      </section>
+      </main>
 
-      {/* ENERGY CORE */}
+      {/* =====================================================
+          CHAT LOG
+      ===================================================== */}
 
-      <div className="core-stage">
-        <EnergyCore
-          thinking={loading}
-        />
-      </div>
-
-      {/* CHAT HISTORY */}
-
-      <section
+      <div
         className="log"
         ref={logRef}
       >
-        {messages
-          .slice(1)
-          .map((message, index) => (
+        {messages.map(
+          (m, i) => (
             <div
-              key={index}
+              key={i}
               className={`msg-row ${
-                message.role
+                m.role
               }`}
             >
               <div className="msg-label">
-                {message.role ===
+                {m.role ===
                 "user"
                   ? "YOU"
                   : "JARVIS"}
@@ -1043,79 +1619,117 @@ export default function Home() {
 
               <div
                 className={`bubble ${
-                  message.error
+                  m.error
                     ? "error"
                     : ""
                 }`}
               >
-                {
-                  message.content
-                }
+                {m.content}
               </div>
             </div>
-          ))}
+          )
+        )}
 
         {loading && (
           <div className="msg-row assistant">
+
             <div className="msg-label">
               JARVIS
             </div>
 
             <div className="bubble thinking-row">
+
               <span />
               <span />
               <span />
+              <span />
+
             </div>
+
           </div>
         )}
-      </section>
 
-      {/* INPUT */}
+      </div>
 
-      <footer className="input-bar">
-        <button
-          className={`icon-btn mic ${
-            listening
-              ? "listening"
-              : ""
-          }`}
-          onClick={toggleMic}
-          title="Voice input"
-          aria-label="Voice input"
-        >
-          <span className="mic-icon">
-            🎙
+      {/* =====================================================
+          INPUT
+      ===================================================== */}
+
+      <div className="input-container">
+
+        <div className="input-bar">
+
+          <button
+            className={`icon-btn mic ${
+              listening
+                ? "listening"
+                : ""
+            }`}
+            onClick={
+              toggleMic
+            }
+            title="Voice input"
+          >
+            <span>
+              ◉
+            </span>
+          </button>
+
+          <div className="input-wrapper">
+
+            <span className="input-prefix">
+              ›
+            </span>
+
+            <input
+              value={input}
+              onChange={(e) =>
+                setInput(
+                  e.target.value
+                )
+              }
+              onKeyDown={(e) => {
+                if (
+                  e.key ===
+                  "Enter"
+                ) {
+                  sendMessage();
+                }
+              }}
+              placeholder="Speak to J.A.R.V.I.S..."
+              disabled={loading}
+            />
+
+          </div>
+
+          <button
+            className="icon-btn send"
+            onClick={
+              sendMessage
+            }
+            disabled={
+              loading ||
+              !input.trim()
+            }
+            title="Send"
+          >
+            →
+          </button>
+
+        </div>
+
+        <div className="input-hint">
+          <span>
+            J.A.R.V.I.S. NEURAL INTERFACE
           </span>
-        </button>
 
-        <input
-          value={input}
-          onChange={(event) =>
-            setInput(
-              event.target.value
-            )
-          }
-          onKeyDown={
-            handleKeyDown
-          }
-          placeholder="Speak, and I shall listen..."
-          disabled={loading}
-          autoComplete="off"
-        />
+          <span>
+            ENTER TO TRANSMIT
+          </span>
+        </div>
 
-        <button
-          className="icon-btn send"
-          onClick={sendMessage}
-          disabled={
-            loading ||
-            !input.trim()
-          }
-          title="Send"
-          aria-label="Send"
-        >
-          ➤
-        </button>
-      </footer>
-    </main>
+      </div>
+
+    </div>
   );
 }
