@@ -31,41 +31,49 @@ const PARTICLES = Array.from({ length: 50 }).map((_, i) => {
   };
 });
 
-// Long straight spikes radiating outward, some poking past the sphere's edge
-const RAYS = Array.from({ length: 20 }).map((_, i) => {
+// A handful of long straight spikes for accent, kept few so they don't drown out the curved mesh
+const RAYS = Array.from({ length: 12 }).map((_, i) => {
   const angle = rand(i * 91.7) * 360;
   const length = 34 + rand(i * 4.51) * 26;
   return { angle, length };
 });
 
-// Dense tangle of curved chords crossing through the sphere — this is what
-// gives it that chaotic "scribbled energy ball" texture instead of clean rings
+// Dense tangle of curved chords crossing through the sphere — cubic beziers with
+// two independent control points so they visibly loop and bend, not just barely bow
 function makeMesh(count, seedOffset) {
   return Array.from({ length: count }).map((_, i) => {
     const s = i + seedOffset;
     const a1 = rand(s * 12.9898) * 360;
-    const spread = 70 + rand(s * 78.233) * 220;
+    const spread = 60 + rand(s * 78.233) * 240;
     const a2 = a1 + spread;
-    const r1 = 24 + rand(s * 45.164) * 22;
-    const r2 = 24 + rand(s * 91.345) * 22;
-    const curveAngle = rand(s * 33.71) * 360;
-    const curveRadius = rand(s * 5.23) * 24;
+    const r1 = 22 + rand(s * 45.164) * 24;
+    const r2 = 22 + rand(s * 91.345) * 24;
     const x1 = 50 + r1 * Math.cos((a1 * Math.PI) / 180);
     const y1 = 50 + r1 * Math.sin((a1 * Math.PI) / 180);
     const x2 = 50 + r2 * Math.cos((a2 * Math.PI) / 180);
     const y2 = 50 + r2 * Math.sin((a2 * Math.PI) / 180);
-    const cx = 50 + curveRadius * Math.cos((curveAngle * Math.PI) / 180);
-    const cy = 50 + curveRadius * Math.sin((curveAngle * Math.PI) / 180);
+
+    // Two independent control points, each free to land anywhere in a wide radius —
+    // this is what creates real loops and S-bends instead of near-straight lines
+    const c1Angle = rand(s * 17.91) * 360;
+    const c1Radius = 5 + rand(s * 61.3) * 42;
+    const c2Angle = rand(s * 29.44) * 360;
+    const c2Radius = 5 + rand(s * 8.77) * 42;
+    const c1x = 50 + c1Radius * Math.cos((c1Angle * Math.PI) / 180);
+    const c1y = 50 + c1Radius * Math.sin((c1Angle * Math.PI) / 180);
+    const c2x = 50 + c2Radius * Math.cos((c2Angle * Math.PI) / 180);
+    const c2y = 50 + c2Radius * Math.sin((c2Angle * Math.PI) / 180);
+
     return {
-      d: `M${x1.toFixed(2)},${y1.toFixed(2)} Q${cx.toFixed(2)},${cy.toFixed(2)} ${x2.toFixed(2)},${y2.toFixed(2)}`,
+      d: `M${x1.toFixed(2)},${y1.toFixed(2)} C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${x2.toFixed(2)},${y2.toFixed(2)}`,
       opacity: 0.4 + rand(s * 17.34) * 0.45,
       width: 0.5 + rand(s * 3.14) * 0.5,
     };
   });
 }
 
-const MESH_A = makeMesh(34, 1);
-const MESH_B = makeMesh(34, 500);
+const MESH_A = makeMesh(38, 1);
+const MESH_B = makeMesh(38, 500);
 
 function Core({ thinking }) {
   return (
