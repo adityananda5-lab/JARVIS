@@ -1,24 +1,35 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@500;600;700&display=swap");
-
 :root {
-  --bg: #030612;
-  --bg-deep: #01030a;
+  --bg: #010509;
+  --panel: rgba(3, 13, 21, 0.62);
 
-  --cyan: #35edff;
-  --cyan-bright: #bfffff;
-  --cyan-dark: #008ca8;
-  --blue: #087cff;
+  --panel-border:
+    rgba(45, 220, 255, 0.16);
 
-  --text: #e9fcff;
-  --text-dim: #6e8994;
+  --cyan: #35eaff;
+  --cyan-bright: #dfffff;
+  --blue: #008cff;
 
-  --panel: rgba(4, 15, 25, 0.78);
-  --border: rgba(46, 222, 255, 0.2);
+  --text: #e8fbff;
+  --text-dim: #68838b;
 
-  --font-display: "Orbitron", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
-  --font-body: "Inter", sans-serif;
+  --danger: #ff4f6d;
+
+  --font-display:
+    "Orbitron",
+    sans-serif;
+
+  --font-mono:
+    "JetBrains Mono",
+    monospace;
+
+  --font-body:
+    "Inter",
+    sans-serif;
 }
+
+/* =========================================================
+   RESET
+========================================================= */
 
 * {
   box-sizing: border-box;
@@ -26,24 +37,13 @@
 
 html,
 body {
-  width: 100%;
-  height: 100%;
   margin: 0;
   padding: 0;
 
-  background:
-    radial-gradient(
-      circle at 50% 48%,
-      rgba(0, 160, 210, 0.09),
-      transparent 25%
-    ),
-    radial-gradient(
-      circle at 50% 50%,
-      #061323 0%,
-      #030711 45%,
-      #01030a 100%
-    );
+  width: 100%;
+  height: 100%;
 
+  background: var(--bg);
   color: var(--text);
 
   font-family: var(--font-body);
@@ -52,796 +52,79 @@ body {
 }
 
 body {
-  position: relative;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(0, 170, 255, 0.08),
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(0, 80, 160, 0.08),
+      transparent 65%
+    );
+
+  background-color: #010509;
 }
 
-button,
-input {
-  font-family: inherit;
-}
-
-/* ============================================================
+/* =========================================================
    BOOT
-============================================================ */
+========================================================= */
 
 .boot-screen {
-  width: 100%;
+  width: 100vw;
   height: 100dvh;
 
   display: flex;
+
   flex-direction: column;
+
   align-items: center;
   justify-content: center;
 
-  background:
-    radial-gradient(
-      circle at center,
-      rgba(0, 220, 255, 0.13),
-      transparent 22%
-    ),
-    #01040b;
+  gap: 18px;
 
   font-family: var(--font-mono);
 
-  position: relative;
-
-  overflow: hidden;
-}
-
-.boot-screen::before {
-  content: "";
-
-  position: absolute;
-  inset: 0;
-
-  background:
-    linear-gradient(
-      rgba(40, 220, 255, 0.025) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(40, 220, 255, 0.025) 1px,
-      transparent 1px
-    );
-
-  background-size: 45px 45px;
-
-  mask-image: radial-gradient(
-    circle at center,
-    black,
-    transparent 70%
-  );
-
-  pointer-events: none;
-}
-
-.boot-core {
-  width: 90px;
-  height: 90px;
-
-  border-radius: 50%;
-
-  position: relative;
-
-  margin-bottom: 35px;
+  color: var(--cyan);
 
   background:
     radial-gradient(
       circle,
-      rgba(255, 255, 255, 0.95) 0%,
-      rgba(80, 240, 255, 0.9) 9%,
-      rgba(0, 170, 255, 0.25) 32%,
-      transparent 68%
+      rgba(0, 200, 255, 0.08),
+      transparent 45%
     );
 
-  filter:
-    drop-shadow(
-      0 0 25px
-      rgba(0, 220, 255, 0.8)
-    );
-
-  animation: boot-core-pulse 1.7s
-    ease-in-out infinite;
-}
-
-.boot-core::before,
-.boot-core::after {
-  content: "";
-
-  position: absolute;
-
-  inset: 8px;
-
-  border: 1px solid
-    rgba(75, 235, 255, 0.35);
-
-  border-radius: 50%;
-
-  animation: boot-ring 3s
-    linear infinite;
-}
-
-.boot-core::after {
-  inset: -10px;
-
-  border-color:
-    rgba(0, 170, 255, 0.15);
-
-  animation-direction: reverse;
-  animation-duration: 4s;
-}
-
-.boot-core-dot {
-  position: absolute;
-
-  width: 10px;
-  height: 10px;
-
-  left: 50%;
-  top: 50%;
-
-  transform:
-    translate(-50%, -50%);
-
-  background: white;
-
-  border-radius: 50%;
-
-  box-shadow:
-    0 0 8px white,
-    0 0 20px var(--cyan),
-    0 0 40px var(--cyan);
-}
-
-@keyframes boot-core-pulse {
-  0%,
-  100% {
-    transform: scale(0.8);
-  }
-
-  50% {
-    transform: scale(1.12);
-  }
-}
-
-@keyframes boot-ring {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.boot-lines {
-  display: flex;
-  flex-direction: column;
-
-  gap: 10px;
-
-  min-width: 310px;
+  letter-spacing: 0.08em;
 }
 
 .boot-line {
-  font-size: 11px;
+  font-size: 13px;
 
-  letter-spacing: 0.12em;
-
-  color: var(--cyan);
+  opacity: 0;
 
   animation:
-    boot-fade 0.35s
-    ease forwards;
+    boot-fade
+    0.4s
+    ease
+    forwards;
 
   text-shadow:
-    0 0 10px
-    rgba(0, 220, 255, 0.55);
+    0 0 12px
+    rgba(50, 230, 255, 0.5);
 }
 
 .boot-line.dim {
-  color: #58717d;
+  color: var(--text-dim);
 
   text-shadow: none;
-}
-
-.boot-prefix {
-  display: inline-block;
-
-  width: 24px;
-
-  color: var(--cyan);
 }
 
 @keyframes boot-fade {
   from {
     opacity: 0;
     transform:
-      translateX(-8px);
-  }
-
-  to {
-    opacity: 1;
-    transform:
-      translateX(0);
-  }
-}
-
-/* ============================================================
-   APP
-============================================================ */
-
-.app {
-  width: 100%;
-  height: 100dvh;
-
-  display: flex;
-  flex-direction: column;
-
-  position: relative;
-
-  isolation: isolate;
-
-  background:
-    radial-gradient(
-      ellipse at 50% 48%,
-      rgba(0, 180, 220, 0.065),
-      transparent 32%
-    );
-}
-
-/* ============================================================
-   BACKGROUND GRID
-============================================================ */
-
-.ambient-grid {
-  position: absolute;
-
-  inset: 0;
-
-  z-index: -2;
-
-  opacity: 0.28;
-
-  background:
-    linear-gradient(
-      rgba(40, 210, 255, 0.018) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(40, 210, 255, 0.018) 1px,
-      transparent 1px
-    );
-
-  background-size:
-    55px 55px;
-
-  mask-image:
-    radial-gradient(
-      ellipse at center,
-      black 0%,
-      transparent 72%
-    );
-}
-
-/* ============================================================
-   HEADER
-============================================================ */
-
-.header {
-  position: relative;
-
-  z-index: 10;
-
-  width: 100%;
-
-  padding:
-    20px 26px;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-}
-
-.brand {
-  display: flex;
-
-  align-items: center;
-
-  gap: 12px;
-}
-
-.brand-mark {
-  width: 30px;
-  height: 30px;
-
-  border:
-    1px solid
-    rgba(65, 235, 255, 0.35);
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  color: var(--cyan);
-
-  font-family:
-    var(--font-display);
-
-  font-size: 12px;
-
-  box-shadow:
-    0 0 15px
-    rgba(0, 200, 255, 0.1);
-
-  background:
-    rgba(0, 120, 160, 0.06);
-
-  clip-path:
-    polygon(
-      7% 0,
-      93% 0,
-      100% 7%,
-      100% 93%,
-      93% 100%,
-      7% 100%,
-      0 93%,
-      0 7%
-    );
-}
-
-.wordmark {
-  font-family:
-    var(--font-display);
-
-  font-weight: 600;
-
-  font-size: 16px;
-
-  letter-spacing: 0.2em;
-
-  color: var(--cyan-bright);
-
-  text-shadow:
-    0 0 16px
-    rgba(35, 230, 255, 0.4);
-}
-
-.status-line {
-  margin-top: 4px;
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 7px;
-
-  font-family:
-    var(--font-mono);
-
-  font-size: 8px;
-
-  letter-spacing: 0.18em;
-
-  color: var(--text-dim);
-}
-
-.status-dot {
-  width: 5px;
-  height: 5px;
-
-  border-radius: 50%;
-
-  background: var(--cyan);
-
-  box-shadow:
-    0 0 7px var(--cyan);
-
-  animation:
-    status-blink 2s
-    ease-in-out infinite;
-}
-
-@keyframes status-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.35;
-  }
-}
-
-/* ============================================================
-   VOICE BUTTON
-============================================================ */
-
-.voice-toggle {
-  display: flex;
-
-  align-items: center;
-
-  gap: 7px;
-
-  padding:
-    8px 11px;
-
-  border:
-    1px solid
-    rgba(50, 220, 255, 0.2);
-
-  background:
-    rgba(0, 30, 45, 0.35);
-
-  color: var(--text-dim);
-
-  font-family:
-    var(--font-mono);
-
-  font-size: 8px;
-
-  letter-spacing: 0.14em;
-
-  cursor: pointer;
-
-  transition:
-    all 0.25s ease;
-
-  backdrop-filter:
-    blur(8px);
-}
-
-.voice-toggle:hover {
-  border-color:
-    rgba(60, 235, 255, 0.5);
-
-  color: var(--cyan);
-}
-
-.voice-toggle.active {
-  color: #001015;
-
-  background: var(--cyan);
-
-  border-color: var(--cyan);
-
-  box-shadow:
-    0 0 20px
-    rgba(0, 220, 255, 0.28);
-}
-
-.voice-icon {
-  font-size: 8px;
-}
-
-/* ============================================================
-   MAIN STAGE
-============================================================ */
-
-.main-stage {
-  position: fixed;
-
-  inset: 0;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  pointer-events: none;
-
-  z-index: 1;
-}
-
-.core-wrapper {
-  width: min(
-    68vmin,
-    620px
-  );
-
-  height: min(
-    68vmin,
-    620px
-  );
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  position: relative;
-}
-
-/* ============================================================
-   CORE
-============================================================ */
-
-.core {
-  position: relative;
-
-  width: 100%;
-  height: 100%;
-
-  transition:
-    transform 1s
-      cubic-bezier(
-        0.22,
-        1,
-        0.36,
-        1
-      );
-
-  transform:
-    scale(0.78);
-
-  filter:
-    drop-shadow(
-      0 0 25px
-      rgba(0, 210, 255, 0.16)
-    );
-}
-
-.core.active {
-  transform:
-    scale(1.08);
-
-  filter:
-    drop-shadow(
-      0 0 60px
-      rgba(0, 220, 255, 0.38)
-    );
-}
-
-.core-canvas-wrap {
-  position: absolute;
-
-  inset: 0;
-
-  width: 100%;
-  height: 100%;
-}
-
-.core-canvas-wrap canvas {
-  display: block;
-
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* ============================================================
-   CORE AURA
-============================================================ */
-
-.core-aura {
-  position: absolute;
-
-  width: 35%;
-  height: 35%;
-
-  left: 32.5%;
-  top: 32.5%;
-
-  border-radius: 50%;
-
-  background:
-    radial-gradient(
-      circle,
-      rgba(210, 255, 255, 0.25),
-      rgba(0, 220, 255, 0.08) 35%,
-      transparent 72%
-    );
-
-  filter:
-    blur(10px);
-
-  pointer-events: none;
-
-  animation:
-    aura-pulse 2.7s
-    ease-in-out infinite;
-}
-
-.core.active .core-aura {
-  animation-duration: 0.65s;
-
-  transform: scale(1.7);
-
-  opacity: 1;
-}
-
-@keyframes aura-pulse {
-  0%,
-  100% {
-    transform: scale(0.85);
-    opacity: 0.55;
-  }
-
-  50% {
-    transform: scale(1.15);
-    opacity: 0.95;
-  }
-}
-
-/* ============================================================
-   DECORATIVE RINGS
-============================================================ */
-
-.core-ring {
-  position: absolute;
-
-  border-radius: 50%;
-
-  border:
-    1px solid
-    rgba(50, 220, 255, 0.08);
-
-  pointer-events: none;
-
-  opacity: 0.4;
-}
-
-.ring-one {
-  width: 54%;
-  height: 54%;
-
-  left: 23%;
-  top: 23%;
-
-  animation:
-    ring-spin 18s
-    linear infinite;
-}
-
-.ring-two {
-  width: 76%;
-  height: 76%;
-
-  left: 12%;
-  top: 12%;
-
-  border-style: dashed;
-
-  border-color:
-    rgba(30, 190, 255, 0.05);
-
-  animation:
-    ring-spin 28s
-    linear infinite reverse;
-}
-
-.core.active .ring-one,
-.core.active .ring-two {
-  border-color:
-    rgba(55, 235, 255, 0.14);
-}
-
-@keyframes ring-spin {
-  from {
-    transform:
-      rotate(0deg);
-  }
-
-  to {
-    transform:
-      rotate(360deg);
-  }
-}
-
-/* ============================================================
-   CORE LABEL
-============================================================ */
-
-.core-label {
-  position: absolute;
-
-  left: 50%;
-
-  bottom: 4%;
-
-  transform:
-    translateX(-50%);
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 10px;
-
-  font-family:
-    var(--font-mono);
-
-  font-size: 7px;
-
-  letter-spacing: 0.2em;
-
-  color:
-    rgba(125, 225, 240, 0.42);
-
-  white-space: nowrap;
-}
-
-.core-label-line {
-  width: 25px;
-
-  height: 1px;
-
-  background:
-    rgba(80, 220, 255, 0.18);
-}
-
-/* ============================================================
-   CHAT LOG
-============================================================ */
-
-.log {
-  position: fixed;
-
-  left: 22px;
-  bottom: 92px;
-
-  width: min(
-    430px,
-    calc(100vw - 44px)
-  );
-
-  max-height: 35vh;
-
-  z-index: 5;
-
-  overflow-y: auto;
-
-  display: flex;
-
-  flex-direction: column;
-
-  gap: 10px;
-
-  padding:
-    4px;
-
-  pointer-events: auto;
-
-  scrollbar-width: thin;
-
-  scrollbar-color:
-    rgba(45, 215, 255, 0.2)
-    transparent;
-}
-
-.log::-webkit-scrollbar {
-  width: 3px;
-}
-
-.log::-webkit-scrollbar-thumb {
-  background:
-    rgba(45, 215, 255, 0.2);
-}
-
-.msg-row {
-  display: flex;
-
-  flex-direction: column;
-
-  max-width: 100%;
-
-  animation:
-    message-in 0.3s
-    ease forwards;
-}
-
-@keyframes message-in {
-  from {
-    opacity: 0;
-    transform:
-      translateY(6px);
+      translateY(4px);
   }
 
   to {
@@ -851,11 +134,356 @@ input {
   }
 }
 
+/* =========================================================
+   APP
+========================================================= */
+
+.app {
+  width: 100vw;
+  height: 100dvh;
+
+  display: flex;
+
+  flex-direction: column;
+
+  position: relative;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(0, 180, 255, 0.035),
+      transparent 50%
+    );
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.header {
+  position: absolute;
+
+  top: 0;
+  left: 0;
+  right: 0;
+
+  z-index: 20;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  padding:
+    20px 24px;
+
+  pointer-events: none;
+}
+
+.title-block {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.wordmark {
+  font-family:
+    var(--font-display);
+
+  font-weight: 700;
+
+  font-size: 20px;
+
+  letter-spacing: 0.2em;
+
+  color:
+    var(--cyan-bright);
+
+  text-shadow:
+    0 0 12px
+      rgba(53, 234, 255, 0.75),
+    0 0 35px
+      rgba(0, 160, 255, 0.3);
+}
+
+.status-line {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  font-family:
+    var(--font-mono);
+
+  font-size: 10px;
+
+  letter-spacing: 0.14em;
+
+  color:
+    var(--text-dim);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background:
+    var(--cyan);
+
+  box-shadow:
+    0 0 7px
+      var(--cyan),
+    0 0 16px
+      rgba(53, 234, 255, 0.7);
+
+  animation:
+    blink
+    2s
+    ease-in-out
+    infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* =========================================================
+   VOICE
+========================================================= */
+
+.voice-toggle {
+  pointer-events: auto;
+
+  background:
+    rgba(0, 15, 24, 0.5);
+
+  border:
+    1px solid
+    var(--panel-border);
+
+  color:
+    var(--text-dim);
+
+  font-family:
+    var(--font-mono);
+
+  font-size: 10px;
+
+  letter-spacing: 0.1em;
+
+  padding:
+    7px 11px;
+
+  border-radius: 3px;
+
+  cursor: pointer;
+
+  backdrop-filter:
+    blur(10px);
+
+  transition:
+    all 0.25s ease;
+}
+
+.voice-toggle:hover {
+  border-color:
+    var(--cyan);
+
+  color:
+    var(--cyan);
+
+  box-shadow:
+    0 0 15px
+      rgba(53, 234, 255, 0.15);
+}
+
+.voice-toggle.active {
+  color: #001016;
+
+  background:
+    var(--cyan);
+
+  border-color:
+    var(--cyan);
+
+  box-shadow:
+    0 0 20px
+      rgba(53, 234, 255, 0.45);
+}
+
+/* =========================================================
+   FULL SCREEN CORE
+========================================================= */
+
+.core-stage {
+  position: fixed;
+
+  inset: 0;
+
+  width: 100vw;
+  height: 100dvh;
+
+  z-index: 1;
+
+  pointer-events: none;
+
+  overflow: hidden;
+}
+
+.core {
+  position: absolute;
+
+  left: -10vw;
+  top: -10vh;
+
+  width: 120vw;
+  height: 120vh;
+
+  transform:
+    scale(0.72);
+
+  transform-origin:
+    center center;
+
+  transition:
+    transform
+    1.8s
+    cubic-bezier(
+      0.16,
+      1,
+      0.3,
+      1
+    );
+
+  filter:
+    drop-shadow(
+      0 0 35px
+      rgba(0, 210, 255, 0.16)
+    );
+}
+
+.core.thinking {
+  transform:
+    scale(1.18);
+
+  filter:
+    drop-shadow(
+      0 0 90px
+      rgba(0, 220, 255, 0.42)
+    );
+}
+
+.core-canvas-wrap {
+  width: 100%;
+  height: 100%;
+}
+
+.core canvas {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100% !important;
+  height: 100% !important;
+
+  display: block;
+}
+
+/* =========================================================
+   CHAT HUD
+========================================================= */
+
+.log {
+  position: fixed;
+
+  left: 24px;
+  bottom: 98px;
+
+  width:
+    min(
+      410px,
+      calc(100vw - 48px)
+    );
+
+  max-height: 27vh;
+
+  z-index: 10;
+
+  overflow-y: auto;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+
+  padding: 5px;
+
+  pointer-events: auto;
+
+  scrollbar-width: thin;
+
+  scrollbar-color:
+    rgba(53, 234, 255, 0.18)
+    transparent;
+
+  /*
+   * Makes the chat fade into the
+   * environment instead of looking
+   * like a conventional chat window.
+   */
+  mask-image:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      black 12%,
+      black 100%
+    );
+}
+
+.log::-webkit-scrollbar {
+  width: 3px;
+}
+
+.log::-webkit-scrollbar-thumb {
+  background:
+    rgba(53, 234, 255, 0.2);
+
+  border-radius: 2px;
+}
+
+.msg-row {
+  display: flex;
+
+  flex-direction: column;
+
+  max-width: 100%;
+}
+
 .msg-row.user {
+  align-self: flex-end;
+
   align-items: flex-end;
 }
 
 .msg-row.assistant {
+  align-self: flex-start;
+
   align-items: flex-start;
 }
 
@@ -863,79 +491,92 @@ input {
   font-family:
     var(--font-mono);
 
-  font-size: 7px;
+  font-size: 8px;
 
-  letter-spacing: 0.18em;
+  letter-spacing: 0.15em;
 
   color:
-    rgba(100, 180, 195, 0.55);
+    rgba(130, 190, 205, 0.65);
 
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 
   padding:
     0 4px;
 }
 
 .bubble {
+  position: relative;
+
   max-width: 100%;
 
   padding:
-    8px 11px;
+    7px 10px;
+
+  border-radius: 2px;
 
   font-size: 11px;
 
-  line-height: 1.45;
+  line-height: 1.5;
 
   white-space: pre-wrap;
 
-  backdrop-filter:
-    blur(10px);
+  background:
+    rgba(2, 14, 23, 0.45);
 
   border:
     1px solid
-    rgba(45, 220, 255, 0.1);
+    rgba(45, 220, 255, 0.08);
 
-  background:
-    rgba(2, 14, 23, 0.65);
+  backdrop-filter:
+    blur(8px);
+
+  box-shadow:
+    0 0 25px
+    rgba(0, 130, 180, 0.04);
 }
 
 .msg-row.assistant
-  .bubble {
+.bubble {
   border-left:
     2px solid
-    rgba(45, 225, 255, 0.65);
+    rgba(53, 234, 255, 0.75);
 
   color:
-    rgba(225, 250, 255, 0.9);
+    rgba(225, 249, 255, 0.9);
 }
 
 .msg-row.user
-  .bubble {
+.bubble {
   border-right:
     2px solid
-    rgba(0, 160, 255, 0.55);
+    rgba(0, 150, 255, 0.65);
 
   color:
-    rgba(210, 240, 255, 0.85);
+    rgba(225, 249, 255, 0.8);
 
   background:
-    rgba(0, 70, 110, 0.22);
+    rgba(0, 70, 110, 0.18);
 }
 
 .bubble.error {
-  border-color:
-    rgba(255, 80, 80, 0.5);
+  border-left-color:
+    var(--danger);
 
   color:
-    #ff9b9b;
+    #ffb3c0;
 }
+
+/* =========================================================
+   THINKING
+========================================================= */
 
 .thinking-row {
   display: flex;
 
-  align-items: center;
+  gap: 4px;
 
-  gap: 5px;
+  padding:
+    9px 12px;
 }
 
 .thinking-row span {
@@ -952,126 +593,94 @@ input {
     var(--cyan);
 
   animation:
-    thinking 1.1s
-    ease-in-out infinite;
+    bounce
+    1.2s
+    ease-in-out
+    infinite;
 }
 
 .thinking-row
-  span:nth-child(2) {
+span:nth-child(2) {
   animation-delay:
-    0.12s;
+    0.15s;
 }
 
 .thinking-row
-  span:nth-child(3) {
+span:nth-child(3) {
   animation-delay:
-    0.24s;
+    0.3s;
 }
 
-.thinking-row
-  span:nth-child(4) {
-  animation-delay:
-    0.36s;
-}
-
-@keyframes thinking {
+@keyframes bounce {
   0%,
+  60%,
   100% {
     transform:
       translateY(0);
 
-    opacity: 0.3;
+    opacity:
+      0.35;
   }
 
-  50% {
+  30% {
     transform:
       translateY(-4px);
 
-    opacity: 1;
+    opacity:
+      1;
   }
 }
 
-/* ============================================================
+/* =========================================================
    INPUT
-============================================================ */
+========================================================= */
 
-.input-container {
+.input-bar {
   position: fixed;
 
   left: 50%;
-
-  bottom: 18px;
+  bottom: 20px;
 
   transform:
     translateX(-50%);
 
+  z-index: 20;
+
   width:
     min(
       720px,
-      calc(100vw - 32px)
+      calc(100vw - 30px)
     );
 
-  z-index: 20;
-}
-
-.input-bar {
   display: flex;
 
   align-items: center;
 
-  gap: 7px;
+  gap: 9px;
 
-  padding: 6px;
+  padding: 8px;
 
   border:
     1px solid
-    rgba(55, 225, 255, 0.2);
+    rgba(53, 234, 255, 0.12);
 
   background:
-    rgba(2, 11, 18, 0.82);
+    rgba(1, 9, 15, 0.68);
 
   backdrop-filter:
-    blur(18px);
+    blur(16px);
+
+  border-radius: 5px;
 
   box-shadow:
     0 0 35px
-    rgba(0, 170, 255, 0.07);
-
-  clip-path:
-    polygon(
-      0 0,
-      calc(100% - 10px) 0,
-      100% 10px,
-      100% 100%,
-      10px 100%,
-      0 calc(100% - 10px)
-    );
-}
-
-.input-wrapper {
-  flex: 1;
-
-  min-width: 0;
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 8px;
-}
-
-.input-prefix {
-  color:
-    rgba(60, 220, 255, 0.5);
-
-  font-family:
-    var(--font-mono);
-
-  font-size: 15px;
+      rgba(0, 150, 220, 0.06),
+    inset 0 0 25px
+      rgba(0, 170, 255, 0.025);
 }
 
 .input-bar input {
-  width: 100%;
+  flex: 1;
 
   min-width: 0;
 
@@ -1088,37 +697,46 @@ input {
   font-family:
     var(--font-mono);
 
-  font-size: 11px;
+  font-size: 12px;
 
   padding:
-    10px 0;
+    9px 5px;
 }
 
 .input-bar input::placeholder {
   color:
-    rgba(105, 140, 150, 0.5);
+    rgba(110, 150, 160, 0.55);
 }
 
+.input-bar input:focus {
+  box-shadow: none;
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
 .icon-btn {
-  width: 37px;
-  height: 37px;
+  width: 38px;
+  height: 38px;
 
   flex-shrink: 0;
 
+  border-radius: 3px;
+
   border:
     1px solid
-    rgba(45, 220, 255, 0.15);
+    rgba(53, 234, 255, 0.13);
 
   background:
-    rgba(0, 40, 55, 0.35);
+    rgba(3, 20, 29, 0.7);
 
   color:
-    rgba(110, 230, 255, 0.75);
+    var(--cyan);
 
   display: flex;
 
   align-items: center;
-
   justify-content: center;
 
   cursor: pointer;
@@ -1129,33 +747,32 @@ input {
 
 .icon-btn:hover {
   border-color:
-    rgba(60, 230, 255, 0.6);
-
-  color:
     var(--cyan);
 
   box-shadow:
-    0 0 14px
-    rgba(0, 220, 255, 0.15);
+    0 0 15px
+      rgba(53, 234, 255, 0.2);
 }
 
 .icon-btn.mic.listening {
-  color:
-    #001015;
-
   background:
-    var(--cyan);
+    var(--danger);
 
   border-color:
-    var(--cyan);
+    var(--danger);
+
+  color:
+    #05070a;
 
   box-shadow:
-    0 0 22px
-    rgba(0, 220, 255, 0.5);
+    0 0 25px
+      rgba(255, 79, 109, 0.45);
 
   animation:
-    mic-pulse 0.8s
-    ease-in-out infinite;
+    mic-pulse
+    1s
+    ease-in-out
+    infinite;
 }
 
 @keyframes mic-pulse {
@@ -1173,134 +790,74 @@ input {
 
 .icon-btn.send {
   background:
-    rgba(20, 190, 220, 0.12);
-
-  color:
     var(--cyan);
-}
 
-.icon-btn.send:not(:disabled) {
   border-color:
-    rgba(50, 220, 255, 0.35);
-}
-
-.icon-btn.send:disabled {
-  opacity: 0.25;
-
-  cursor: default;
-}
-
-/* ============================================================
-   INPUT HINT
-============================================================ */
-
-.input-hint {
-  display: flex;
-
-  justify-content: space-between;
-
-  padding:
-    5px 4px 0;
-
-  font-family:
-    var(--font-mono);
-
-  font-size: 6px;
-
-  letter-spacing: 0.14em;
+    var(--cyan);
 
   color:
-    rgba(90, 135, 145, 0.45);
+    #001016;
+
+  box-shadow:
+    0 0 15px
+      rgba(53, 234, 255, 0.2);
 }
 
-/* ============================================================
+.icon-btn.send:hover {
+  box-shadow:
+    0 0 25px
+      rgba(53, 234, 255, 0.45);
+}
+
+.icon-btn:disabled {
+  opacity: 0.3;
+
+  cursor:
+    default;
+
+  box-shadow: none;
+}
+
+/* =========================================================
    MOBILE
-============================================================ */
+========================================================= */
 
 @media (max-width: 600px) {
   .header {
     padding:
-      15px 16px;
+      16px 15px;
   }
 
   .wordmark {
-    font-size: 13px;
-
-    letter-spacing:
-      0.16em;
+    font-size: 16px;
   }
 
-  .brand-mark {
-    width: 27px;
-    height: 27px;
-  }
+  .core {
+    left: -25vw;
+    top: -10vh;
 
-  .core-wrapper {
-    width: 88vmin;
-    height: 88vmin;
+    width: 150vw;
+    height: 120vh;
   }
 
   .log {
     left: 14px;
-    bottom: 95px;
+    bottom: 92px;
 
     width:
       calc(100vw - 28px);
 
-    max-height: 27vh;
+    max-height: 22vh;
   }
 
-  .bubble {
-    font-size: 10px;
-  }
-
-  .input-container {
-    bottom: 10px;
+  .input-bar {
+    bottom: 12px;
 
     width:
       calc(100vw - 20px);
   }
 
-  .input-hint {
-    display: none;
-  }
-
-  .core-label {
-    bottom: 7%;
-
-    font-size: 6px;
-  }
-}
-
-/* ============================================================
-   VERY SMALL DEVICES
-============================================================ */
-
-@media (max-height: 650px) {
-  .log {
-    max-height: 22vh;
-  }
-
-  .core-label {
-    display: none;
-  }
-}
-
-/* ============================================================
-   REDUCED MOTION
-============================================================ */
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration:
-      0.01ms !important;
-
-    animation-iteration-count:
-      1 !important;
-
-    transition-duration:
-      0.01ms !important;
+  .bubble {
+    font-size: 10px;
   }
 }
